@@ -1,0 +1,79 @@
+.home {
+  width: 100%;
+}
+
+.home h1 {
+  margin-bottom: 2rem;
+  color: #2c3e50;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.section {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.section.full-width {
+  grid-column: 1 / -1;
+}
+
+.section h2 {
+  margin-bottom: 1rem;
+  color: #34495e;
+  font-size: 1.2rem;
+}
+
+.info {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #e8f5e9;
+  border-radius: 4px;
+  color: #2e7d32;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background: #3498db;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.btn-primary:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #229954;
+}
+

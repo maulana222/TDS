@@ -1,0 +1,59 @@
+.history {
+  width: 100%;
+}
+
+.history h1 {
+  margin-bottom: 2rem;
+  color: #2c3e50;
+}
+
+.history-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.history-list,
+.history-detail {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.history-list h2,
+.history-detail h2 {
+  margin-bottom: 1rem;
+  color: #34495e;
+}
+
+.history-list ul {
+  list-style: none;
+}
+
+.history-list li {
+  margin-bottom: 0.5rem;
+}
+
+.history-list button {
+  width: 100%;
+  padding: 0.5rem;
+  background: #ecf0f1;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.history-list button:hover {
+  background: #d5dbdb;
+}
+
+.history-detail pre {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.9rem;
+}
+
