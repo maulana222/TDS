@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { FiCheckCircle, FiXCircle, FiActivity } from 'react-icons/fi';
 
 function TransactionMonitor({ 
   progress, 
@@ -8,7 +9,9 @@ function TransactionMonitor({
   remainingCount,
   pagination = null,
   onPageChange = null,
-  loading = false
+  loading = false,
+  onDelete = null,
+  onViewDetail = null
 }) {
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'success', 'failed'
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,18 +80,40 @@ function TransactionMonitor({
         </div>
       )}
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-          <span className="block text-sm font-semibold text-green-700 mb-2">Berhasil</span>
-          <span className="block text-4xl font-bold text-green-700">{successCount}</span>
+        <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Berhasil</p>
+              <p className="text-3xl font-bold text-gray-900">{successCount}</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <FiCheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-xl p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-          <span className="block text-sm font-semibold text-red-700 mb-2">Gagal</span>
-          <span className="block text-4xl font-bold text-red-700">{failedCount}</span>
+        <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Gagal</p>
+              <p className="text-3xl font-bold text-gray-900">{failedCount}</p>
+            </div>
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+              <FiXCircle className="w-6 h-6 text-red-600" />
+            </div>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 text-center shadow-sm hover:shadow-md transition-shadow">
-          <span className="block text-sm font-semibold text-blue-700 mb-2">Total</span>
-          <span className="block text-4xl font-bold text-blue-700">{results.length}</span>
+        <div className="bg-white border border-gray-200 rounded-lg p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
+              <p className="text-3xl font-bold text-gray-900">{results.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <FiActivity className="w-6 h-6 text-gray-600" />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -178,122 +203,148 @@ function TransactionMonitor({
         </div>
 
         <div className="overflow-x-auto">
-          {results.length === 0 && !isProcessing && (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">📋</div>
-              <p className="text-gray-500 font-medium">Belum ada transaksi</p>
-            </div>
-          )}
-          
-          {results.length > 0 && filteredResults.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-5xl mb-3">🔍</div>
-              <p className="text-gray-500 font-medium">Tidak ada hasil yang sesuai filter</p>
-              <button
-                onClick={() => {
-                  setStatusFilter('all');
-                  setSearchQuery('');
-                }}
-                className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-              >
-                Reset filter
-              </button>
-            </div>
-          )}
-
-          {filteredResults.length > 0 && (
-            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-              <div className="overflow-x-auto max-h-[600px]">
-                <table className="w-full">
-                  <thead className="bg-gray-50 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        No
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Customer Number
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Product Code
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Ref ID
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        RC
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Message/Error
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Response Time
-                      </th>
+          <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            <div className="overflow-x-auto max-h-[600px]">
+              <table className="w-full">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      No
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      Customer Number
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      Product Code
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      Ref ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      RC
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
+                      Aksi
+                    </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredResults.map((result, idx) => {
-                      // Calculate row number based on pagination
-                      const rowNumber = pagination 
-                        ? ((pagination.page - 1) * pagination.limit) + idx + 1
-                        : (result.index || idx + 1);
-                      
-                      return (
-                      <tr 
-                        key={result.ref_id || idx}
-                        className={`hover:bg-gray-50 transition-colors ${
-                          result.success ? 'bg-white' : 'bg-red-50/30'
-                        }`}
-                      >
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {rowNumber}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            result.success 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {result.success ? '✅ Success' : '❌ Failed'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          <div className="font-mono">
-                            {result.customer_no}
-                            {result.customer_no_used && result.customer_no_used !== result.customer_no && (
-                              <div className="text-xs text-blue-600 mt-0.5">
-                                → {result.customer_no_used}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
-                          {result.product_code}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          <span className="font-mono text-xs">{result.ref_id || '-'}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                          {result.data?.rc || '-'}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
-                          <div className="truncate" title={result.data?.message || result.error || '-'}>
-                            {result.data?.message || result.error || '-'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {result.responseTime ? `${result.responseTime}ms` : '-'}
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {results.length === 0 && !isProcessing && !loading && (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-12 text-center">
+                        <div className="text-5xl mb-3">📋</div>
+                        <p className="text-gray-500 font-medium">Belum ada transaksi</p>
+                        <p className="text-gray-400 text-sm mt-1">Mulai dengan upload Excel atau input manual untuk melihat data transaksi di sini</p>
+                      </td>
+                    </tr>
+                  )}
+                  {loading && results.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-12 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="animate-spin text-2xl">⏳</span>
+                          <p className="text-gray-500 font-medium">Memuat data...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {results.length > 0 && filteredResults.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-12 text-center">
+                        <div className="text-5xl mb-3">🔍</div>
+                        <p className="text-gray-500 font-medium">Tidak ada hasil yang sesuai filter</p>
+                        <button
+                          onClick={() => {
+                            setStatusFilter('all');
+                            setSearchQuery('');
+                          }}
+                          className="mt-3 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        >
+                          Reset filter
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {filteredResults.length > 0 && filteredResults.map((result, idx) => {
+                    // Calculate row number based on pagination
+                    const rowNumber = pagination 
+                      ? ((pagination.page - 1) * pagination.limit) + idx + 1
+                      : (result.index || idx + 1);
+                    
+                    return (
+                    <tr 
+                      key={result.ref_id || idx}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        result.success ? 'bg-white' : 'bg-red-50/30'
+                      }`}
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {rowNumber}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          result.success 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {result.success ? '✅ Success' : '❌ Failed'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        <div className="font-mono">
+                          {result.customer_no}
+                          {result.customer_no_used && result.customer_no_used !== result.customer_no && (
+                            <div className="text-xs text-blue-600 mt-0.5">
+                              → {result.customer_no_used}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
+                        {result.product_code}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        <span className="font-mono text-xs">{result.ref_id || '-'}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        {result.data?.rc || '-'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
+                        <div className="flex items-center gap-2">
+                          {onViewDetail && (
+                            <button
+                              onClick={() => onViewDetail(result)}
+                              className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                              title="Lihat detail"
+                            >
+                              👁️ Detail
+                            </button>
+                          )}
+                          {onDelete && result.id && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Yakin ingin menghapus transaksi dengan Ref ID: ${result.ref_id || result.id}?`)) {
+                                  onDelete(result.id);
+                                }
+                              }}
+                              className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                              title="Hapus transaksi"
+                            >
+                              🗑️ Hapus
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Pagination Controls */}

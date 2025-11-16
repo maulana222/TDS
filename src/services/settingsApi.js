@@ -50,7 +50,8 @@ export async function saveSettings(settings) {
       export_format: settings.exportFormat || 'excel',
       digiprosb_username: settings.digiprosbUsername || null,
       digiprosb_api_key: settings.digiprosbApiKey || null,
-      digiprosb_endpoint: settings.digiprosbEndpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'
+      digiprosb_endpoint: settings.digiprosbEndpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+      telegram_bot_token: settings.telegramBotToken || null
     };
 
     const response = await fetch(`${API_URL}/api/settings`, {

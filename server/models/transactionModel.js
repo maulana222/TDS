@@ -310,6 +310,60 @@ export const getBatches = async (userId, limit = 20) => {
 /**
  * Get transaction by ref_id
  */
+/**
+ * Delete all transactions for a user
+ */
+export const deleteAllTransactions = async (userId) => {
+  const [result] = await pool.execute(
+    'DELETE FROM transactions WHERE user_id = ?',
+    [userId]
+  );
+  return result.affectedRows;
+};
+
+/**
+ * Delete transactions by date range
+ */
+export const deleteTransactionsByDateRange = async (userId, startDate, endDate) => {
+  let query = 'DELETE FROM transactions WHERE user_id = ?';
+  const params = [userId];
+  
+  if (startDate) {
+    query += ' AND created_at >= ?';
+    params.push(startDate);
+  }
+  
+  if (endDate) {
+    query += ' AND created_at <= ?';
+    params.push(endDate);
+  }
+  
+  const [result] = await pool.execute(query, params);
+  return result.affectedRows;
+};
+
+/**
+ * Delete all batches for a user
+ */
+export const deleteAllBatches = async (userId) => {
+  const [result] = await pool.execute(
+    'DELETE FROM transaction_batches WHERE user_id = ?',
+    [userId]
+  );
+  return result.affectedRows;
+};
+
+/**
+ * Delete single transaction by ID
+ */
+export const deleteTransactionById = async (transactionId, userId) => {
+  const [result] = await pool.execute(
+    'DELETE FROM transactions WHERE id = ? AND user_id = ?',
+    [transactionId, userId]
+  );
+  return result.affectedRows;
+};
+
 export const getTransactionByRefId = async (refId) => {
   const [rows] = await pool.execute(
     `SELECT 
@@ -422,6 +476,8 @@ export const updateBatchStats = async (batchId) => {
     );
   }
 };
+
+
 
 
 

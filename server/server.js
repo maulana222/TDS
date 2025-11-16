@@ -8,6 +8,9 @@ import transactionRoutes from './routes/transactionRoutes.js';
 import callbackRoutes from './routes/callbackRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import logRoutes from './routes/logRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import deleteRoutes from './routes/deleteRoutes.js';
+import telegramRoutes from './routes/telegramRoutes.js';
 import pool from './config/database.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { initSocket } from './socket.js';
@@ -73,6 +76,9 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/callback', callbackRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/delete', deleteRoutes);
+app.use('/api/telegram', telegramRoutes);
 
 // Log registered routes
 console.log('📋 Registered routes:');

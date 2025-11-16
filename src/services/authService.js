@@ -1,6 +1,14 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3737';
 
 /**
+ * Get backend URL
+ * @returns {string}
+ */
+export function getBackendUrl() {
+  return API_URL;
+}
+
+/**
  * Login user
  * @param {string} username 
  * @param {string} password 

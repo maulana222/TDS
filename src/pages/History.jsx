@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { listHistoryFiles, loadTransactionHistory } from '../utils/storage';
+import { deleteAllTransactions, deleteTransactionsByDateRange } from '../services/deleteApi';
 
 function History() {
   const [historyFiles, setHistoryFiles] = useState([]);
@@ -8,6 +9,7 @@ function History() {
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadHistoryList();
@@ -66,15 +68,61 @@ function History() {
     return filtered;
   };
 
+  const handleDeleteAll = async () => {
+    if (!window.confirm('⚠️ PERINGATAN!\n\nApakah Anda yakin ingin menghapus SEMUA transaksi dari database?\n\nTindakan ini TIDAK DAPAT DIBATALKAN!')) {
+      return;
+    }
+
+    // Double confirmation
+    const confirmText = prompt('Ketik "HAPUS SEMUA" untuk konfirmasi:');
+    if (confirmText !== 'HAPUS SEMUA') {
+      toast.error('Konfirmasi dibatalkan');
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      const result = await deleteAllTransactions();
+      toast.success(`Berhasil menghapus ${result.deleted_count} transaksi`);
+      
+      // Clear selected history
+      setSelectedHistory(null);
+      
+      // Reload history list
+      await loadHistoryList();
+    } catch (error) {
+      console.error('Error deleting transactions:', error);
+      toast.error(error.message || 'Gagal menghapus transaksi');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filteredResults = getFilteredResults();
   const successCount = selectedHistory?.results?.filter(r => r.success).length || 0;
   const failedCount = selectedHistory?.results?.filter(r => !r.success).length || 0;
 
   return (
     <div className="w-full space-y-6">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Transaction History</h1>
-        <p className="text-gray-600">Lihat dan kelola riwayat transaksi sebelumnya</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Transaction History</h1>
+          <p className="text-gray-600">Lihat dan kelola riwayat transaksi sebelumnya</p>
+        </div>
+        <button
+          onClick={handleDeleteAll}
+          disabled={deleting}
+          className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {deleting ? (
+            <span className="flex items-center gap-2">
+              <span className="animate-spin">⏳</span>
+              Menghapus...
+            </span>
+          ) : (
+            '🗑️ Hapus Semua Transaksi'
+          )}
+        </button>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

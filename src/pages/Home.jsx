@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import ExcelUpload from '../components/ExcelUpload';
+import ManualInput from '../components/ManualInput';
 import ConfigForm from '../components/ConfigForm';
 import TransactionMonitor from '../components/TransactionMonitor';
 import ExcelPreview from '../components/ExcelPreview';
@@ -16,6 +17,7 @@ import {
   saveTransactions as saveTransactionsToDB,
   getTransactions
 } from '../services/transactionApi';
+import { deleteAllTransactions, deleteTransactionById } from '../services/deleteApi';
 import { 
   initSocket, 
   disconnectSocket, 
@@ -38,6 +40,7 @@ function Home() {
   const [config, setConfig] = useState({
     delay: 0
   });
+  const [inputMode, setInputMode] = useState('excel'); // 'excel' or 'manual'
   const cancelTokenRef = useRef({ cancelled: false });
   const notifiedRefs = useRef(new Set()); // Track ref_id yang sudah di-notify
   const [loadingFromDB, setLoadingFromDB] = useState(false);
@@ -128,6 +131,7 @@ function Home() {
       if (response.success && response.data) {
         // Convert database format ke format results
         const dbResults = response.data.map(tx => ({
+          id: tx.id,
           ref_id: tx.ref_id,
           customer_no: tx.customer_no,
           customer_no_used: tx.customer_no_used,
@@ -341,6 +345,12 @@ function Home() {
     }
   };
 
+  const handleManualGenerate = (manualTransactions) => {
+    setTransactions(manualTransactions);
+    setProgress(null);
+    toast.success(`${manualTransactions.length} transaksi siap diproses`);
+  };
+
   const handleConfirmPreview = () => {
     if (previewData) {
       setTransactions(previewData.transactions);
@@ -362,7 +372,7 @@ function Home() {
     const transactionsToProcess = resume ? remainingTransactions : transactions;
     
     if (transactionsToProcess.length === 0) {
-      toast.error('Silakan upload file Excel terlebih dahulu');
+      toast.error('Silakan input data terlebih dahulu (Excel atau Manual)');
       return;
     }
 
@@ -631,6 +641,71 @@ function Home() {
     }
   };
 
+  const handleDeleteAllFromDB = async () => {
+    if (!window.confirm('⚠️ PERINGATAN!\n\nApakah Anda yakin ingin menghapus SEMUA transaksi dari database?\n\nTindakan ini TIDAK DAPAT DIBATALKAN!')) {
+      return;
+    }
+
+    // Double confirmation
+    const confirmText = prompt('Ketik "HAPUS SEMUA" untuk konfirmasi:');
+    if (confirmText !== 'HAPUS SEMUA') {
+      toast.error('Konfirmasi dibatalkan');
+      return;
+    }
+
+    try {
+      const result = await deleteAllTransactions();
+      toast.success(`Berhasil menghapus ${result.deleted_count} transaksi dari database`);
+      
+      // Clear local state
+      setResults([]);
+      setTransactions([]);
+      setProgress({ current: 0, total: 0, progress: 0 });
+      setCurrentBatchId(null);
+      notifiedRefs.current.clear();
+      
+      // Reload transactions
+      await loadTransactions(true);
+    } catch (error) {
+      console.error('Error deleting transactions:', error);
+      toast.error(error.message || 'Gagal menghapus transaksi');
+    }
+  };
+
+  const handleDeleteSingle = async (transactionId) => {
+    try {
+      toast.loading('Menghapus transaksi...', { id: 'delete-single' });
+      const result = await deleteTransactionById(transactionId);
+      toast.dismiss('delete-single');
+      toast.success('Berhasil menghapus transaksi');
+      
+      // Remove from results
+      setResults(prev => prev.filter(r => r.id !== transactionId));
+      
+      // Reload transactions
+      await loadTransactions();
+    } catch (error) {
+      toast.dismiss('delete-single');
+      console.error('Error deleting transaction:', error);
+      toast.error(error.message || 'Gagal menghapus transaksi');
+    }
+  };
+
+  const handleViewDetail = (transaction) => {
+    const detail = `
+Ref ID: ${transaction.ref_id || '-'}
+Customer Number: ${transaction.customer_no || '-'}
+Product Code: ${transaction.product_code || '-'}
+Status: ${transaction.success ? '✅ Success' : '❌ Failed'}
+RC: ${transaction.data?.rc || '-'}
+Message: ${transaction.data?.message || transaction.error || '-'}
+Response Time: ${transaction.responseTime ? `${transaction.responseTime}ms` : '-'}
+Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleString('id-ID') : '-'}
+    `.trim();
+    
+    alert(detail);
+  };
+
   const handleClearAll = () => {
     if (window.confirm('Apakah Anda yakin ingin menghapus semua data? File Excel, hasil transaksi, dan progress akan direset.')) {
       setTransactions([]);
@@ -651,13 +726,15 @@ function Home() {
   };
 
   const handleClearFile = () => {
-    if (window.confirm('Hapus file Excel yang sudah diupload?')) {
+    if (window.confirm('Hapus data yang sudah diinput?')) {
       setTransactions([]);
       setCurrentBatchId(null);
       notifiedRefs.current.clear(); // Clear notifications saat reset
       setProgress(null);
       setRemainingTransactions([]);
       setIsPaused(false);
+      setShowPreview(false);
+      setPreviewData(null);
       cancelTokenRef.current = { cancelled: false };
       
       // Reload transactions dari database hari ini setelah clear file
@@ -669,112 +746,189 @@ function Home() {
   };
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full max-w-7xl mx-auto space-y-10 px-4 py-6">
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">Transaction Request Tool</h1>
-        <p className="text-gray-600">Upload file Excel dan lakukan request transaksi secara otomatis</p>
+        <p className="text-gray-600 text-lg">Upload file Excel atau input manual untuk melakukan request transaksi</p>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 font-bold">1</span>
+
+      {/* Main Content - Flexible Layout */}
+      <div className="space-y-10">
+        {/* Top Section - Upload & Config Side by Side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Step 1: Input Mode Selection */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="mb-5">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-sm font-semibold text-gray-500">STEP 1</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900">Input Data</h2>
+              <p className="text-sm text-gray-500 mt-1">Pilih metode input: Excel atau Manual</p>
             </div>
-            <h2 className="text-xl font-semibold text-gray-800">Upload Excel</h2>
-          </div>
-          <ExcelUpload onFileUpload={handleFileUpload} />
-          {transactions.length > 0 && (
-            <div className="mt-4 space-y-3">
-              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-green-700 font-medium">
-                    <span className="text-xl">✅</span>
-                    <span>{transactions.length} transaksi siap diproses</span>
+
+            {/* Tab Selection */}
+            <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => {
+                  setInputMode('excel');
+                  setTransactions([]);
+                }}
+                disabled={isProcessing}
+                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                  inputMode === 'excel'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                📊 Excel Upload
+              </button>
+              <button
+                onClick={() => {
+                  setInputMode('manual');
+                  setTransactions([]);
+                }}
+                disabled={isProcessing}
+                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                  inputMode === 'manual'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                ✏️ Manual Input
+              </button>
+            </div>
+
+            {/* Content berdasarkan mode */}
+            {inputMode === 'excel' ? (
+              <>
+                <ExcelUpload onFileUpload={handleFileUpload} />
+                {transactions.length > 0 && (
+                  <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-900 font-semibold">{transactions.length} transaksi</p>
+                        <p className="text-gray-600 text-sm">Siap diproses</p>
+                      </div>
+                      <button
+                        onClick={handleClearFile}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded transition-colors"
+                        disabled={isProcessing}
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={handleClearFile}
-                    className="px-3 py-1.5 bg-red-100 text-red-700 rounded-md text-sm font-medium hover:bg-red-200 transition-colors"
-                    disabled={isProcessing}
-                  >
-                    🗑️ Hapus
-                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <ManualInput 
+                  onGenerateTransactions={handleManualGenerate}
+                  disabled={isProcessing}
+                />
+                {transactions.length > 0 && (
+                  <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-900 font-semibold">{transactions.length} transaksi</p>
+                        <p className="text-gray-600 text-sm">Siap diproses</p>
+                      </div>
+                      <button
+                        onClick={handleClearFile}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded transition-colors"
+                        disabled={isProcessing}
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Step 2: Konfigurasi */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="mb-5">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-sm font-semibold text-gray-500">STEP 2</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900">Konfigurasi</h2>
+              <p className="text-sm text-gray-500 mt-1">Atur delay antar request dan parameter lainnya</p>
+            </div>
+            
+            <ConfigForm 
+              config={config} 
+              onChange={setConfig}
+              disabled={isProcessing}
+              transactions={transactions}
+            />
+          </div>
+        </div>
+
+        {/* Right Column - Monitor & Results (2/3 width) */}
+        <div className="xl:col-span-2">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            {/* Header Section */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-sm font-semibold text-gray-500">STEP 3</span>
+                    <div className="flex-1 h-px bg-gray-200"></div>
+                  </div>
+                  <h2 className="text-lg font-semibold text-gray-900">Monitor & Hasil</h2>
+                  <p className="text-sm text-gray-500 mt-1">Pantau progress dan hasil transaksi real-time</p>
                 </div>
+                
+                <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => loadTransactions()}
+                  disabled={loadingFromDB}
+                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                  title="Refresh data dari database"
+                >
+                  {loadingFromDB ? 'Loading...' : 'Refresh'}
+                </button>
+                
+                {isProcessing && (
+                  <button
+                    onClick={handleStop}
+                    className="px-5 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg transition-colors"
+                  >
+                    Stop
+                  </button>
+                )}
+                
+                {isPaused && !isProcessing && remainingTransactions.length > 0 && (
+                  <button
+                    onClick={handleResume}
+                    className="px-5 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg transition-colors"
+                  >
+                    Lanjutkan ({remainingTransactions.length})
+                  </button>
+                )}
+                
+                <button 
+                  className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isProcessing || transactions.length === 0
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                  }`}
+                  onClick={() => handleStart(false)}
+                  disabled={isProcessing || transactions.length === 0}
+                >
+                  {isProcessing ? 'Memproses...' : 'Mulai Request'}
+                </button>
               </div>
             </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <span className="text-purple-600 font-bold">2</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800">Konfigurasi</h2>
           </div>
-          <ConfigForm 
-            config={config} 
-            onChange={setConfig}
-            disabled={isProcessing}
-          />
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <span className="text-indigo-600 font-bold">3</span>
-            </div>
-            <h2 className="text-xl font-semibold text-gray-800">Monitor & Hasil</h2>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => loadTransactions()}
-              disabled={loadingFromDB}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 text-sm disabled:opacity-50"
-              title="Refresh data dari database"
-            >
-              {loadingFromDB ? '⏳ Loading...' : '🔄 Refresh'}
-            </button>
-            {isProcessing && (
-              <button
-                onClick={handleStop}
-                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                ⏹️ Stop
-              </button>
-            )}
-            {isPaused && !isProcessing && remainingTransactions.length > 0 && (
-              <button
-                onClick={handleResume}
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                ▶️ Lanjutkan ({remainingTransactions.length} tersisa)
-              </button>
-            )}
-            <button 
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-sm ${
-                isProcessing || transactions.length === 0
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-md'
-              }`}
-              onClick={() => handleStart(false)}
-              disabled={isProcessing || transactions.length === 0}
-            >
-              {isProcessing ? (
-                <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span>
-                  Memproses...
-                </span>
-              ) : (
-                '🚀 Mulai Request'
-              )}
-            </button>
-          </div>
-        </div>
-        
-        <FilterForm 
+      
+          <div className="space-y-6">
+            <FilterForm 
           filters={filters}
           onFilterChange={handleFilterChange}
           onReset={() => {
@@ -798,29 +952,46 @@ function Home() {
           pagination={pagination}
           onPageChange={handlePageChange}
           loading={loadingFromDB}
+          onDelete={handleDeleteSingle}
+          onViewDetail={handleViewDetail}
         />
         
-        {(results.length > 0 || transactions.length > 0) && (
-          <div className="flex flex-wrap justify-between items-center gap-3 mt-6 pt-6 border-t border-gray-200">
-            <button
-              onClick={handleClearAll}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 text-sm"
-              disabled={isProcessing}
-            >
-              🗑️ Reset Semua
-            </button>
-            
-            {results.length > 0 && (
-              <button 
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                onClick={handleExport}
-              >
-                📊 Export ke Excel
-              </button>
+            {/* Action Buttons */}
+            {(results.length > 0 || transactions.length > 0) && (
+              <div className="pt-6 border-t border-gray-200">
+                <div className="flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={handleClearAll}
+                      className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      disabled={isProcessing}
+                    >
+                      Reset Semua
+                    </button>
+                    <button
+                      onClick={handleDeleteAllFromDB}
+                      className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                      disabled={isProcessing}
+                    >
+                      Hapus dari Database
+                    </button>
+                  </div>
+                  
+                  {results.length > 0 && (
+                    <button 
+                      className="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors"
+                      onClick={handleExport}
+                    >
+                      Export ke Excel
+                    </button>
+                  )}
+                </div>
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
+    </div>
 
       {/* Excel Preview Modal */}
       {showPreview && (

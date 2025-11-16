@@ -8,7 +8,7 @@ export const getUserSettings = async (userId) => {
     `SELECT 
       id, user_id, default_delay, default_limit, auto_refresh, refresh_interval,
       show_notifications, export_format, digiprosb_username, digiprosb_api_key,
-      digiprosb_endpoint, created_at, updated_at
+      digiprosb_endpoint, telegram_bot_token, created_at, updated_at
     FROM user_settings
     WHERE user_id = ?`,
     [userId]
@@ -26,7 +26,8 @@ export const getUserSettings = async (userId) => {
       export_format: 'excel',
       digiprosb_username: null,
       digiprosb_api_key: null,
-      digiprosb_endpoint: 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'
+      digiprosb_endpoint: 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+      telegram_bot_token: null
     };
   }
 
@@ -51,7 +52,8 @@ export const saveUserSettings = async (userId, settings) => {
     export_format = 'excel',
     digiprosb_username = null,
     digiprosb_api_key = null,
-    digiprosb_endpoint = 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'
+    digiprosb_endpoint = 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+    telegram_bot_token = null
   } = settings;
 
   // Check if settings exist
@@ -73,6 +75,7 @@ export const saveUserSettings = async (userId, settings) => {
         digiprosb_username = ?,
         digiprosb_api_key = ?,
         digiprosb_endpoint = ?,
+        telegram_bot_token = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE user_id = ?`,
       [
@@ -85,6 +88,7 @@ export const saveUserSettings = async (userId, settings) => {
         digiprosb_username,
         digiprosb_api_key,
         digiprosb_endpoint,
+        telegram_bot_token,
         userId
       ]
     );
@@ -95,8 +99,8 @@ export const saveUserSettings = async (userId, settings) => {
       `INSERT INTO user_settings (
         user_id, default_delay, default_limit, auto_refresh, refresh_interval,
         show_notifications, export_format, digiprosb_username, digiprosb_api_key,
-        digiprosb_endpoint
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        digiprosb_endpoint, telegram_bot_token
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         default_delay,
@@ -107,7 +111,8 @@ export const saveUserSettings = async (userId, settings) => {
         export_format,
         digiprosb_username,
         digiprosb_api_key,
-        digiprosb_endpoint
+        digiprosb_endpoint,
+        telegram_bot_token
       ]
     );
     return result.insertId;
@@ -129,6 +134,7 @@ export const resetUserSettings = async (userId) => {
       digiprosb_username = NULL,
       digiprosb_api_key = NULL,
       digiprosb_endpoint = 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+      telegram_bot_token = NULL,
       updated_at = CURRENT_TIMESTAMP
     WHERE user_id = ?`,
     [userId]

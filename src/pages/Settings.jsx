@@ -15,7 +15,9 @@ function Settings() {
     // Digiprosb API Settings
     digiprosbUsername: '',
     digiprosbApiKey: '',
-    digiprosbEndpoint: 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'
+    digiprosbEndpoint: 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+    // Telegram Settings
+    telegramBotToken: ''
   });
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
@@ -40,7 +42,8 @@ function Settings() {
         exportFormat: apiSettings.export_format || 'excel',
         digiprosbUsername: apiSettings.digiprosb_username || '',
         digiprosbApiKey: apiSettings.digiprosb_api_key || '',
-        digiprosbEndpoint: apiSettings.digiprosb_endpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'
+        digiprosbEndpoint: apiSettings.digiprosb_endpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+        telegramBotToken: apiSettings.telegram_bot_token || ''
       });
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -333,6 +336,51 @@ function Settings() {
                       <li>Setting ini akan digunakan untuk semua request transaksi</li>
                       <li>Perubahan setting akan berlaku setelah disimpan</li>
                     </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Telegram API Settings */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                <span className="text-cyan-600 text-xl">📱</span>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Telegram Bot Settings</h2>
+            </div>
+
+            <div className="space-y-5">
+              {/* Bot Token */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Telegram Bot Token
+                </label>
+                <input
+                  type="password"
+                  value={settings.telegramBotToken}
+                  onChange={(e) => handleChange('telegramBotToken', e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
+                  placeholder="Masukkan Telegram Bot Token"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Bot Token dari @BotFather di Telegram. Format: 123456789:ABCdefGHIjklMNOpqrsTUVwxyz
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-600 text-lg">ℹ️</span>
+                  <div className="text-sm text-blue-800">
+                    <p className="font-semibold mb-1">Cara mendapatkan Bot Token:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                      <li>Buka Telegram dan cari @BotFather</li>
+                      <li>Kirim perintah /newbot</li>
+                      <li>Ikuti instruksi untuk membuat bot baru</li>
+                      <li>Salin Bot Token yang diberikan</li>
+                      <li>Paste token di field di atas</li>
+                    </ol>
                   </div>
                 </div>
               </div>

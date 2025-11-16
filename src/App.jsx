@@ -1,21 +1,52 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { FiMenu } from 'react-icons/fi';
 import Login from './components/Login';
+import Sidebar from './components/Sidebar';
+import ProfileDropdown from './components/ProfileDropdown';
 import Home from './pages/Home';
+import Tools from './pages/Tools';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Logs from './pages/Logs';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import Telegram from './pages/Telegram';
 import { isAuthenticated, logout, verifyToken, getCurrentUser } from './services/authService';
 import { initSocket, disconnectSocket } from './services/socketService';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('home');
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Get current page from URL
+  const getCurrentPageFromPath = (pathname) => {
+    const path = pathname.replace('/', '') || 'dashboard';
+    return path;
+  };
+
+  const currentPage = getCurrentPageFromPath(location.pathname);
+
+  useEffect(() => {
+    // Check if desktop
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 768);
+    };
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const checkAuth = async () => {
     if (isAuthenticated()) {
@@ -28,13 +59,24 @@ function App() {
         if (user && user.id) {
           initSocket(user.id);
         }
+        
+        // Redirect ke dashboard jika sudah login dan di root atau login
+        if (location.pathname === '/' || location.pathname === '/login') {
+          navigate('/dashboard', { replace: true });
+        }
       } catch (error) {
         setIsLoggedIn(false);
         disconnectSocket();
+        if (location.pathname !== '/login') {
+          navigate('/login', { replace: true });
+        }
       }
     } else {
       setIsLoggedIn(false);
       disconnectSocket();
+      if (location.pathname !== '/login') {
+        navigate('/login', { replace: true });
+      }
     }
     setCheckingAuth(false);
   };
@@ -47,13 +89,20 @@ function App() {
     if (user && user.id) {
       initSocket(user.id);
     }
+    
+    // Redirect ke dashboard setelah login berhasil
+    navigate('/dashboard', { replace: true });
   };
 
   const handleLogout = () => {
     logout();
     disconnectSocket(); // Disconnect socket saat logout
     setIsLoggedIn(false);
-    setCurrentPage('home');
+    navigate('/login', { replace: true });
+  };
+
+  const setCurrentPage = (page) => {
+    navigate(`/${page}`, { replace: false });
   };
 
   if (checkingAuth) {
@@ -69,100 +118,117 @@ function App() {
 
   if (!isLoggedIn) {
     return (
-      <>
-        <Login onLoginSuccess={handleLoginSuccess} />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              duration: 4000,
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
-      </>
+      <Routes>
+        <Route path="/login" element={
+          <>
+            <Login onLoginSuccess={handleLoginSuccess} />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+                success: {
+                  duration: 3000,
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
+                  },
+                },
+                error: {
+                  duration: 4000,
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
+          </>
+        } />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     );
   }
 
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const closeSidebar = () => setSidebarOpen(false);
+  const toggleSidebarCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            Snifer
-          </div>
-          <div className="flex gap-2 items-center">
-            <button 
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 ${
-                currentPage === 'home' 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-              onClick={() => setCurrentPage('home')}
-            >
-              Home
-            </button>
-            <button 
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 ${
-                currentPage === 'history' 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-              onClick={() => setCurrentPage('history')}
-            >
-              History
-            </button>
-            <button 
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 ${
-                currentPage === 'settings' 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-              onClick={() => setCurrentPage('settings')}
-            >
-              Settings
-            </button>
-            <button 
-              className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 ${
-                currentPage === 'logs' 
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-              onClick={() => setCurrentPage('logs')}
-            >
-              Logs
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-5 py-2.5 rounded-lg font-medium transition-all duration-200 text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage}
+        onLogout={handleLogout}
+        isOpen={sidebarOpen}
+        onToggle={toggleSidebar}
+        onClose={closeSidebar}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapse}
+      />
       
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
-        {currentPage === 'home' && <Home />}
-        {currentPage === 'history' && <History />}
-        {currentPage === 'settings' && <Settings />}
-        {currentPage === 'logs' && <Logs />}
-      </main>
+      <div 
+        className="flex-1 flex flex-col overflow-hidden"
+        style={{
+          marginLeft: isDesktop ? (sidebarCollapsed ? '64px' : '256px') : '0',
+          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
+      >
+        <header 
+          className="bg-white border-b border-gray-200 shadow-sm fixed top-0 z-30"
+          style={{
+            left: isDesktop ? (sidebarCollapsed ? '64px' : '256px') : '0',
+            right: '0',
+            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+        >
+          <div className="px-4 md:px-6 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleSidebar}
+                className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Toggle sidebar"
+              >
+                <FiMenu className="w-6 h-6 text-gray-600" />
+              </button>
+              <button
+                onClick={toggleSidebarCollapse}
+                className="hidden md:flex p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Toggle sidebar collapse"
+              >
+                <FiMenu className="w-6 h-6 text-gray-600" />
+              </button>
+              <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                TDS
+              </div>
+            </div>
+            
+            <ProfileDropdown 
+              onLogout={handleLogout}
+              onNavigate={setCurrentPage}
+            />
+          </div>
+        </header>
+        
+        <main className="flex-1 overflow-auto pt-[73px]">
+          <div className="max-w-7xl w-full mx-auto px-4 md:px-6 py-4 md:py-8">
+            <Routes>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/tools" element={<Tools setCurrentPage={setCurrentPage} />} />
+              <Route path="/transaction-request" element={<Home />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/logs" element={<Logs />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/telegram" element={<Telegram />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </div>
+        </main>
+      </div>
       <Toaster 
         position="top-right"
         toastOptions={{
@@ -188,6 +254,14 @@ function App() {
         }}
       />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 
