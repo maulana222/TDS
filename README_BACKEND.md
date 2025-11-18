@@ -1,4 +1,4 @@
-# Backend Setup - Snifer
+# Backend Setup - TDS
 
 ## Prerequisites
 
@@ -14,8 +14,8 @@
 
    Atau jalankan SQL secara manual:
    ```sql
-   CREATE DATABASE IF NOT EXISTS snifer_db;
-   USE snifer_db;
+   CREATE DATABASE IF NOT EXISTS tds_db;
+   USE tds_db;
    
    CREATE TABLE IF NOT EXISTS users (
      id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,7 +69,7 @@
    DB_HOST=localhost
    DB_USER=root
    DB_PASSWORD=your_password
-   DB_NAME=snifer_db
+   DB_NAME=tds_db
    
    JWT_SECRET=<paste-jwt-secret-yang-sudah-di-generate>
    PORT=3737

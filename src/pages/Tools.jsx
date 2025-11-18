@@ -10,8 +10,11 @@ import {
   FiGrid,
   FiMessageSquare
 } from 'react-icons/fi';
+import { isAdmin } from '../services/authService';
 
 function Tools({ setCurrentPage }) {
+  const admin = isAdmin();
+  
   const tools = [
     {
       id: 'transaction-request',
@@ -79,7 +82,8 @@ function Tools({ setCurrentPage }) {
       borderColor: 'border-pink-200',
       page: 'profile'
     },
-    {
+    // Only show Telegram Tools for admin
+    ...(admin ? [{
       id: 'telegram',
       title: 'Telegram Tools',
       description: 'Kirim pesan ke Telegram menggunakan Bot API',
@@ -89,7 +93,7 @@ function Tools({ setCurrentPage }) {
       bgColor: 'bg-cyan-50',
       borderColor: 'border-cyan-200',
       page: 'telegram'
-    }
+    }] : [])
   ];
 
   const handleToolClick = (page) => {

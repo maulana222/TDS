@@ -3,11 +3,35 @@ import toast from 'react-hot-toast';
 import { Card, CardBody, Typography } from '@material-tailwind/react';
 import Chart from 'react-apexcharts';
 import { getDashboardStats } from '../services/analyticsApi';
+import { getCurrentUser, getUserRoles } from '../services/authService';
 
 function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [daysFilter, setDaysFilter] = useState(7);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const user = getCurrentUser();
+  const userRoles = getUserRoles();
+  const isAdmin = userRoles.includes('admin');
+  const isMember = userRoles.includes('member') && !isAdmin; // Member tapi bukan admin
+
+  // Check if first login (check session storage)
+  useEffect(() => {
+    const welcomeKey = `welcome_${user?.id}`;
+    const hasSeenWelcome = sessionStorage.getItem(welcomeKey);
+    
+    if (!hasSeenWelcome) {
+      setShowWelcome(true);
+      sessionStorage.setItem(welcomeKey, 'true');
+      
+      // Auto hide setelah 5 detik
+      const timer = setTimeout(() => {
+        setShowWelcome(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     loadDashboardData();
@@ -20,12 +44,17 @@ function Dashboard() {
       setStats(data);
     } catch (error) {
       console.error('Error loading dashboard:', error);
-      // Jika error karena unauthorized, akan di-handle oleh App.jsx
-      if (error.message && error.message.includes('Failed to get dashboard stats')) {
-        toast.error('Gagal memuat data dashboard. Pastikan Anda sudah login.');
-      } else {
-        toast.error('Gagal memuat data dashboard');
-      }
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Tampilkan pesan error yang lebih informatif
+      const errorMessage = error.message || 'Gagal memuat data dashboard';
+      toast.error(errorMessage);
+      
+      // Set stats ke null untuk menampilkan empty state
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -45,12 +74,22 @@ function Dashboard() {
   if (!stats) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">Tidak ada data untuk ditampilkan</p>
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span className="text-3xl">📊</span>
+        </div>
+        <p className="text-gray-700 font-semibold mb-1">Tidak ada data untuk ditampilkan</p>
+        <p className="text-sm text-gray-500 mb-4">Belum ada transaksi atau terjadi error saat memuat data</p>
+        <button
+          onClick={loadDashboardData}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          Coba Lagi
+        </button>
       </div>
     );
   }
 
-  const { overall, today, dailyTrend, topProducts, hourlyDistribution } = stats;
+  const { overall, today, dailyTrend } = stats;
 
   // Chart options untuk Daily Trend
   const dailyTrendChartOptions = {
@@ -118,76 +157,6 @@ function Dashboard() {
     overall.failed_count || 0
   ];
 
-  // Chart options untuk Top Products
-  const topProductsChartOptions = {
-    chart: {
-      type: 'bar',
-      toolbar: { show: false },
-      height: 350
-    },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: '55%',
-        borderRadius: 4
-      }
-    },
-    xaxis: {
-      categories: topProducts.map(p => p.product_code)
-    },
-    colors: ['#3b82f6'],
-    dataLabels: {
-      enabled: false
-    },
-    grid: {
-      borderColor: '#e5e7eb'
-    }
-  };
-
-  const topProductsSeries = [
-    {
-      name: 'Transactions',
-      data: topProducts.map(p => p.transaction_count)
-    }
-  ];
-
-  // Chart options untuk Hourly Distribution
-  const hourlyChartOptions = {
-    chart: {
-      type: 'area',
-      toolbar: { show: false },
-      height: 350
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2
-    },
-    xaxis: {
-      categories: hourlyDistribution.map(h => `${h.hour}:00`)
-    },
-    colors: ['#8b5cf6'],
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.7,
-        opacityTo: 0.3
-      }
-    },
-    dataLabels: {
-      enabled: false
-    },
-    grid: {
-      borderColor: '#e5e7eb'
-    }
-  };
-
-  const hourlySeries = [
-    {
-      name: 'Transactions',
-      data: hourlyDistribution.map(h => h.count)
-    }
-  ];
 
   return (
     <div className="w-full space-y-6">
@@ -196,7 +165,49 @@ function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">Statistik dan analisis transaksi</p>
+            {showWelcome && isMember && (
+              <div className="mt-2 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-semibold text-blue-700">
+                      👋 Selamat datang, {user?.username || 'Member'}!
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      Anda login sebagai Member. Nikmati fitur-fitur yang tersedia.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowWelcome(false)}
+                    className="text-blue-400 hover:text-blue-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+            {showWelcome && isAdmin && (
+              <div className="mt-2 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-semibold text-purple-700">
+                      👋 Halo admin, {user?.username || 'Admin'}!
+                    </p>
+                    <p className="text-sm text-purple-600 mt-1">
+                      Selamat datang di Dashboard Administrator.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowWelcome(false)}
+                    className="text-purple-400 hover:text-purple-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+            {!showWelcome && (
+              <p className="text-gray-600">Statistik dan analisis transaksi</p>
+            )}
           </div>
           <div className="flex gap-2">
             <select
@@ -343,77 +354,6 @@ function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Products */}
-        <Card className="shadow-lg border border-gray-200">
-          <CardBody>
-            <Typography variant="h6" className="mb-4 text-gray-800">
-              Top Products
-            </Typography>
-            <Chart
-              options={topProductsChartOptions}
-              series={topProductsSeries}
-              type="bar"
-              height={350}
-            />
-          </CardBody>
-        </Card>
-
-        {/* Hourly Distribution */}
-        <Card className="shadow-lg border border-gray-200">
-          <CardBody>
-            <Typography variant="h6" className="mb-4 text-gray-800">
-              Distribusi Per Jam
-            </Typography>
-            <Chart
-              options={hourlyChartOptions}
-              series={hourlySeries}
-              type="area"
-              height={350}
-            />
-          </CardBody>
-        </Card>
-      </div>
-
-      {/* Top Products Table */}
-      {topProducts.length > 0 && (
-        <Card className="shadow-lg border border-gray-200">
-          <CardBody>
-            <Typography variant="h6" className="mb-4 text-gray-800">
-              Detail Top Products
-            </Typography>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Product Code</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Total</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Success</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Failed</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Success Rate</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Avg Response</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Revenue</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {topProducts.map((product, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.product_code}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{product.transaction_count}</td>
-                      <td className="px-4 py-3 text-sm text-green-600">{product.successful_count}</td>
-                      <td className="px-4 py-3 text-sm text-red-600">{product.failed_count}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{product.success_rate}%</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{product.avg_response_time}ms</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">Rp {product.total_revenue.toLocaleString('id-ID')}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
-      )}
     </div>
   );
 }

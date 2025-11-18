@@ -64,7 +64,7 @@ function Settings() {
 
   const saveSettings = async () => {
     try {
-      // Validasi Digiprosb API Settings
+      // Validasi Digiswitch API Settings
       if (!settings.digiprosbUsername || !settings.digiprosbApiKey || !settings.digiprosbEndpoint) {
         toast.error('Username, API Key, dan API Endpoint harus diisi!');
         return;
@@ -135,20 +135,76 @@ function Settings() {
 
             <div className="space-y-5">
               {/* Default Delay */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-3">
+                <label htmlFor="defaultDelay" className="block text-sm font-semibold text-gray-700">
                   Default Delay antar Request (detik)
                 </label>
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={settings.defaultDelay}
-                  onChange={(e) => handleChange('defaultDelay', parseFloat(e.target.value) || 0)}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  id="defaultDelay"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  value={settings.defaultDelay === 0 || settings.defaultDelay === null || settings.defaultDelay === undefined ? '' : settings.defaultDelay.toString()}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      handleChange('defaultDelay', 0);
+                      return;
+                    }
+                    if (/^\d*\.?\d*$/.test(val)) {
+                      const num = parseFloat(val);
+                      if (!isNaN(num)) {
+                        handleChange('defaultDelay', num);
+                      } else if (val === '.' || val === '0.') {
+                        handleChange('defaultDelay', 0);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || val === '.' || val === '0.') {
+                      handleChange('defaultDelay', 0);
+                    } else {
+                      const num = parseFloat(val);
+                      if (!isNaN(num)) {
+                        handleChange('defaultDelay', num);
+                      }
+                    }
+                  }}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium"
                   placeholder="0"
                 />
-                <p className="mt-1 text-xs text-gray-500">Delay default yang akan digunakan saat memulai request</p>
+                <small className="text-gray-500 text-sm flex items-center gap-1">
+                  <span>💡</span>
+                  <span>0 = tanpa delay (request langsung berurutan). Contoh: 1 = delay 1 detik, 0.5 = delay 0.5 detik</span>
+                </small>
+
+                {/* Quick Preset Buttons */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-600">Quick Preset:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Tanpa Delay', value: 0 },
+                      { label: '0.5s', value: 0.5 },
+                      { label: '1s', value: 1 },
+                      { label: '2s', value: 2 },
+                      { label: '5s', value: 5 }
+                    ].map((preset) => (
+                      <button
+                        key={preset.value}
+                        type="button"
+                        onClick={() => handleChange('defaultDelay', preset.value)}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                          settings.defaultDelay === preset.value
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Default Limit */}
@@ -270,13 +326,13 @@ function Settings() {
             </div>
           </div>
 
-          {/* Digiprosb API Settings */}
+          {/* Digiswitch API Settings */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                 <span className="text-orange-600 text-xl">🔑</span>
               </div>
-              <h2 className="text-xl font-semibold text-gray-800">Digiprosb API Settings</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Digiswitch API Settings</h2>
             </div>
 
             <div className="space-y-5">
@@ -290,9 +346,9 @@ function Settings() {
                   value={settings.digiprosbUsername}
                   onChange={(e) => handleChange('digiprosbUsername', e.target.value)}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Masukkan username Digiprosb"
+                  placeholder="Masukkan username Digiswitch"
                 />
-                <p className="mt-1 text-xs text-gray-500">Username untuk autentikasi API Digiprosb</p>
+                <p className="mt-1 text-xs text-gray-500">Username untuk autentikasi API Digiswitch</p>
               </div>
 
               {/* API Key */}
@@ -305,7 +361,7 @@ function Settings() {
                   value={settings.digiprosbApiKey}
                   onChange={(e) => handleChange('digiprosbApiKey', e.target.value)}
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
-                  placeholder="Masukkan API Key Digiprosb"
+                  placeholder="Masukkan API Key Digiswitch"
                 />
                 <p className="mt-1 text-xs text-gray-500">API Key untuk autentikasi dan signature generation</p>
               </div>
@@ -322,7 +378,7 @@ function Settings() {
                   className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                   placeholder="https://digiprosb.api.digiswitch.id/v1/user/api/transaction"
                 />
-                <p className="mt-1 text-xs text-gray-500">URL endpoint untuk API Digiprosb</p>
+                <p className="mt-1 text-xs text-gray-500">URL endpoint untuk API Digiswitch</p>
               </div>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

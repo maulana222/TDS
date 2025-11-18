@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { FiCheckCircle, FiXCircle, FiActivity } from 'react-icons/fi';
+import { FiCheckCircle, FiXCircle, FiActivity, FiEye, FiTrash2 } from 'react-icons/fi';
 
 function TransactionMonitor({ 
   progress, 
@@ -13,24 +13,16 @@ function TransactionMonitor({
   onDelete = null,
   onViewDetail = null
 }) {
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'success', 'failed'
   const [searchQuery, setSearchQuery] = useState('');
 
   const successCount = results.filter(r => r.success).length;
   const failedCount = results.filter(r => !r.success).length;
 
-  // Filter dan search results
+  // Search results only (no status filter)
   const filteredResults = useMemo(() => {
     let filtered = results;
 
-    // Filter by status
-    if (statusFilter === 'success') {
-      filtered = filtered.filter(r => r.success);
-    } else if (statusFilter === 'failed') {
-      filtered = filtered.filter(r => !r.success);
-    }
-
-    // Search by customer number or product code
+    // Search by customer number, product code, or ref_id
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(r => 
@@ -41,7 +33,7 @@ function TransactionMonitor({
     }
 
     return filtered;
-  }, [results, statusFilter, searchQuery]);
+  }, [results, searchQuery]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,9 +53,9 @@ function TransactionMonitor({
               </span>
             </div>
           </div>
-          <div className="w-full h-7 bg-white rounded-full overflow-hidden shadow-inner">
+          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 transition-all duration-500 ease-out shadow-sm"
+              className="h-full bg-gray-900 transition-all duration-500 ease-out"
               style={{ width: `${progress.progress}%` }}
             />
           </div>
@@ -80,85 +72,52 @@ function TransactionMonitor({
         </div>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Only show if there are transactions */}
+      {results.length > 0 && (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Berhasil</p>
-              <p className="text-3xl font-bold text-gray-900">{successCount}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <FiCheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Gagal</p>
-              <p className="text-3xl font-bold text-gray-900">{failedCount}</p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-              <FiXCircle className="w-6 h-6 text-red-600" />
+          <div className="bg-white border border-gray-200 rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Berhasil</p>
+                <p className="text-3xl font-bold text-gray-900">{successCount}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <FiCheckCircle className="w-6 h-6 text-green-600" />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
-              <p className="text-3xl font-bold text-gray-900">{results.length}</p>
-            </div>
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-              <FiActivity className="w-6 h-6 text-gray-600" />
+          <div className="bg-white border border-gray-200 rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Gagal</p>
+                <p className="text-3xl font-bold text-gray-900">{failedCount}</p>
+              </div>
+              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <FiXCircle className="w-6 h-6 text-red-600" />
+              </div>
             </div>
           </div>
+          <div className="bg-white border border-gray-200 rounded-lg p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
+                <p className="text-3xl font-bold text-gray-900">{results.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                <FiActivity className="w-6 h-6 text-gray-600" />
+              </div>
         </div>
-      </div>
+        </div>
+        </div>
+      )}
 
       <div>
         <div className="flex flex-col sm:flex-row gap-4 mb-4 items-start sm:items-center justify-between">
           <h3 className="text-lg font-bold text-gray-800">Hasil Transaksi</h3>
           
-          {/* Filter & Search */}
+          {/* Search Only - No Filter Buttons */}
           {results.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              {/* Status Filter */}
-              <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setStatusFilter('all')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    statusFilter === 'all'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  All ({results.length})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('success')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    statusFilter === 'success'
-                      ? 'bg-white text-green-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ✅ ({successCount})
-                </button>
-                <button
-                  onClick={() => setStatusFilter('failed')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    statusFilter === 'failed'
-                      ? 'bg-white text-red-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  ❌ ({failedCount})
-                </button>
-              </div>
-
-              {/* Search Input */}
+            <div className="w-full sm:w-auto">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                 <input
@@ -189,7 +148,7 @@ function TransactionMonitor({
               Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} hasil
             </div>
           )}
-          {!pagination && results.length > 0 && (statusFilter !== 'all' || searchQuery) && (
+          {!pagination && results.length > 0 && searchQuery && (
             <div className="text-sm text-gray-600">
               Menampilkan {filteredResults.length} dari {results.length} hasil
             </div>
@@ -202,125 +161,116 @@ function TransactionMonitor({
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            <div className="overflow-x-auto max-h-[600px]">
-              <table className="w-full">
-                <thead className="bg-gray-50 sticky top-0 z-10">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto p-4">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Tanggal</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Product</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Ref ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">SN</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {results.length === 0 && !isProcessing && !loading && (
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      No
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      Customer Number
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      Product Code
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      Ref ID
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      RC
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                      Aksi
-                    </th>
-                    </tr>
-                  </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {results.length === 0 && !isProcessing && !loading && (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-12 text-center">
-                        <div className="text-5xl mb-3">📋</div>
-                        <p className="text-gray-500 font-medium">Belum ada transaksi</p>
-                        <p className="text-gray-400 text-sm mt-1">Mulai dengan upload Excel atau input manual untuk melihat data transaksi di sini</p>
-                      </td>
-                    </tr>
-                  )}
-                  {loading && results.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-12 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="animate-spin text-2xl">⏳</span>
-                          <p className="text-gray-500 font-medium">Memuat data...</p>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {results.length > 0 && filteredResults.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-12 text-center">
-                        <div className="text-5xl mb-3">🔍</div>
-                        <p className="text-gray-500 font-medium">Tidak ada hasil yang sesuai filter</p>
-                        <button
-                          onClick={() => {
-                            setStatusFilter('all');
-                            setSearchQuery('');
-                          }}
-                          className="mt-3 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                        >
-                          Reset filter
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                  {filteredResults.length > 0 && filteredResults.map((result, idx) => {
-                    // Calculate row number based on pagination
-                    const rowNumber = pagination 
-                      ? ((pagination.page - 1) * pagination.limit) + idx + 1
-                      : (result.index || idx + 1);
-                    
-                    return (
-                    <tr 
-                      key={result.ref_id || idx}
-                      className={`hover:bg-gray-50 transition-colors ${
-                        result.success ? 'bg-white' : 'bg-red-50/30'
-                      }`}
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <p className="text-gray-500">Tidak ada transaksi</p>
+                      <p className="text-sm text-gray-400 mt-1">Gunakan filter untuk mencari atau refresh untuk memuat data</p>
+                    </td>
+                  </tr>
+                )}
+                {loading && results.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="animate-spin text-2xl">⏳</span>
+                        <p className="text-gray-500 font-medium">Memuat data...</p>
+            </div>
+                    </td>
+                  </tr>
+          )}
+          {results.length > 0 && filteredResults.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-16 text-center">
+                      <p className="text-gray-500">Tidak ada hasil yang sesuai filter</p>
+              <button
+                        onClick={() => setSearchQuery('')}
+                        className="mt-3 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              >
+                Reset filter
+              </button>
+                    </td>
+                  </tr>
+          )}
+                {filteredResults.length > 0 && filteredResults.map((result, idx) => {
+                      return (
+                      <tr 
+                        key={result.ref_id || idx}
+                      className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}
                     >
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {rowNumber}
+                      <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
+                        {result.timestamp ? new Date(result.timestamp).toLocaleString('id-ID', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '-'}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          result.success 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {result.success ? '✅ Success' : '❌ Failed'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        <div className="font-mono">
-                          {result.customer_no}
-                          {result.customer_no_used && result.customer_no_used !== result.customer_no && (
-                            <div className="text-xs text-blue-600 mt-0.5">
-                              → {result.customer_no_used}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        {result.product_code}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        <span className="font-mono text-xs">{result.ref_id || '-'}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                        {result.data?.rc || '-'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 py-3 border-r border-gray-200">
+                        {(() => {
+                          const statusString = result.statusString || result.data?.status || (result.success ? 'Sukses' : 'Gagal');
+                          const isPending = statusString === 'Pending' || statusString === 'pending' || result.data?.rc === '03';
+                          
+                          if (isPending) {
+                            return (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Pending
+                              </span>
+                            );
+                          } else if (result.success || statusString === 'Sukses' || statusString === 'sukses') {
+                            return (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Success
+                              </span>
+                            );
+                          } else {
+                            return (
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Failed
+                              </span>
+                            );
+                          }
+                        })()}
+                        </td>
+                      <td className="px-4 py-3 border-r border-gray-200">
+                        <span className="text-sm text-gray-900 font-mono">
+                          {result.customer_no_used || result.customer_no}
+                          </span>
+                        </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 font-medium border-r border-gray-200">
+                          {result.product_code}
+                        </td>
+                      <td className="px-4 py-3 border-r border-gray-200">
+                        <span className="text-sm font-mono text-gray-700">{result.ref_id || '-'}</span>
+                        </td>
+                      <td className="px-4 py-3 border-r border-gray-200">
+                        <span className="text-sm font-mono text-gray-700">{result.sn || '-'}</span>
+                        </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
                           {onViewDetail && (
                             <button
                               onClick={() => onViewDetail(result)}
-                              className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                               title="Lihat detail"
                             >
-                              👁️ Detail
+                              <FiEye className="w-4 h-4" />
                             </button>
                           )}
                           {onDelete && result.id && (
@@ -330,21 +280,20 @@ function TransactionMonitor({
                                   onDelete(result.id);
                                 }
                               }}
-                              className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                               title="Hapus transaksi"
                             >
-                              🗑️ Hapus
+                              <FiTrash2 className="w-4 h-4" />
                             </button>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                          </div>
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
         </div>
 
         {/* Pagination Controls */}

@@ -1,11 +1,11 @@
-# Snifer - Transaction Request Tool
+# TDS - Transaction Request Tool
 
 Web app React untuk melakukan request transaksi secara terus menerus dengan upload Excel.
 
 ## Struktur Folder
 
 ```
-Snifer/
+TDS/
 ├── public/                 # Static files
 │   └── index.html
 ├── src/                    # Source code utama

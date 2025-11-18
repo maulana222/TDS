@@ -1,5 +1,5 @@
 {
-  "name": "snifer",
+  "name": "tds",
   "version": "1.0.0",
   "description": "Transaction Request Tool dengan Excel Upload",
   "type": "module",
@@ -10,7 +10,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "generate-template": "node scripts/generateTemplate.js",
-    "create-user": "node server/scripts/createUser.js"
+    "create-user": "node server/scripts/createUser.js",
+    "create-user:admin": "node server/scripts/createUser.js",
+    "create-user:member": "node server/scripts/createUser.js"
   },
   "dependencies": {
     "@material-tailwind/react": "^2.1.3",

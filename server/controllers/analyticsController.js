@@ -11,7 +11,15 @@ import {
  */
 export const getDashboardStatsHandler = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: User ID not found'
+      });
+    }
+
     const { start_date, end_date, days = 7 } = req.query;
 
     const filters = {};
@@ -27,11 +35,23 @@ export const getDashboardStatsHandler = async (req, res) => {
     // Get daily trend
     const dailyTrend = await getDailyTrend(userId, parseInt(days));
 
-    // Get top products
-    const topProducts = await getTopProducts(userId, 10, filters);
+    // Get top products (return empty array if error)
+    let topProducts = [];
+    try {
+      topProducts = await getTopProducts(userId, 10, filters);
+    } catch (error) {
+      console.error('Error getting top products:', error);
+      // Continue with empty array
+    }
 
-    // Get hourly distribution
-    const hourlyDistribution = await getHourlyDistribution(userId, filters);
+    // Get hourly distribution (return empty array if error)
+    let hourlyDistribution = [];
+    try {
+      hourlyDistribution = await getHourlyDistribution(userId, filters);
+    } catch (error) {
+      console.error('Error getting hourly distribution:', error);
+      // Continue with empty array
+    }
 
     res.json({
       success: true,

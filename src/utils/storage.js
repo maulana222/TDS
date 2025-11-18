@@ -53,6 +53,32 @@ export async function loadTransactionHistory(filename) {
     }
     
     const historyEntry = JSON.parse(stored);
+    
+    // Debug: Log structure
+    console.log('History entry structure:', {
+      hasData: !!historyEntry.data,
+      dataKeys: historyEntry.data ? Object.keys(historyEntry.data) : [],
+      filename: historyEntry.filename,
+      timestamp: historyEntry.timestamp
+    });
+    
+    // Validasi structure
+    if (!historyEntry.data) {
+      throw new Error('Data history tidak valid: tidak ada field data');
+    }
+    
+    // Pastikan results ada
+    if (!historyEntry.data.results) {
+      console.warn('History data tidak memiliki results, menambahkan empty array');
+      historyEntry.data.results = [];
+    }
+    
+    // Pastikan results adalah array
+    if (!Array.isArray(historyEntry.data.results)) {
+      console.warn('History results bukan array, mengkonversi ke array');
+      historyEntry.data.results = [];
+    }
+    
     return historyEntry.data;
   } catch (error) {
     console.error('Error loading history:', error);
@@ -81,6 +107,27 @@ function getHistoryList() {
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
+  }
+}
+
+/**
+ * Delete single history file
+ * @param {string} filename - Nama file history yang akan dihapus
+ */
+export async function deleteHistoryFile(filename) {
+  try {
+    const key = `${HISTORY_PREFIX}${filename}`;
+    localStorage.removeItem(key);
+    
+    // Update list history
+    const historyList = getHistoryList();
+    const updatedList = historyList.filter(f => f !== filename);
+    localStorage.setItem(`${STORAGE_KEY}_list`, JSON.stringify(updatedList));
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting history file:', error);
+    throw error;
   }
 }
 

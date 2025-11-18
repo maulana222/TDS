@@ -83,13 +83,23 @@ export async function doTransaction({ productCode, customerNo, refId, signature 
       // Don't fail the transaction if log save fails
     }
     
+    // Extract response data
+    const data = responseData.data || responseData;
+    
+    // Determine success based on status and rc
+    // If status = "Pending" or rc = "03", transaction is pending (not successful yet)
+    const isPending = data.status === 'Pending' || data.status === 'pending' || data.rc === '03';
+    const isSuccess = response.status === 200 && !isPending && (data.status === 'Sukses' || data.status === 'Sukses' || data.rc === '00');
+    
     return {
-      success: response.status === 200,
-      status: response.status,
+      success: isSuccess,
+      status: data.status || response.status,
+      statusCode: response.status,
       responseTime,
-      data: responseData.data || responseData,
+      data: data,
       rawResponse: responseBody,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      isPending: isPending
     };
   } catch (error) {
     return {

@@ -15,16 +15,13 @@ export const initSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.id}`);
-
     // Join room berdasarkan user_id atau batch_id
     socket.on('join-room', (room) => {
       socket.join(room);
-      console.log(`Socket ${socket.id} joined room: ${room}`);
     });
 
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${socket.id}`);
+      // Socket disconnected
     });
   });
 
@@ -45,18 +42,25 @@ export const getIO = () => {
  * Emit transaction update
  */
 export const emitTransactionUpdate = (transaction) => {
-  if (!io) return;
+  if (!io) {
+    return;
+  }
   
   // Emit ke room batch_id jika ada
   if (transaction.batch_id) {
-    io.to(`batch:${transaction.batch_id}`).emit('transaction-updated', transaction);
+    const batchRoom = `batch:${transaction.batch_id}`;
+    io.to(batchRoom).emit('transaction-updated', transaction);
   }
   
-  // Emit ke room user_id (jika berbeda dari batch room, untuk avoid duplicate)
+  // Emit ke room user_id (selalu emit untuk memastikan user menerima update)
   if (transaction.user_id) {
-    // Hanya emit ke user room jika tidak ada batch_id atau untuk broadcast ke semua user
-    io.to(`user:${transaction.user_id}`).emit('transaction-updated', transaction);
+    const userRoom = `user:${transaction.user_id}`;
+    io.to(userRoom).emit('transaction-updated', transaction);
   }
+  
+  // Juga broadcast ke semua connected clients (untuk memastikan update terlihat)
+  // Ini berguna jika ada masalah dengan room joining
+  io.emit('transaction-updated', transaction);
 };
 
 /**

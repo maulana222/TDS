@@ -93,9 +93,8 @@ function Login({ onLoginSuccess }) {
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            Snifer
+            Masuk
           </h1>
-          <p className="text-gray-600">Transaction Request Tool</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

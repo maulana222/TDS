@@ -1,10 +1,18 @@
 /**
  * Generate unique reference ID
- * @returns {string} Unique ref_id dengan format ref_timestamp_random
+ * @returns {string} Unique ref_id dengan format gabungan huruf dan angka (contoh: r2835j9ajdso82jd)
  */
 export function generateRefId() {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `ref_${timestamp}_${random}`;
+  // Karakter yang digunakan: huruf kecil dan angka
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const length = 16; // Panjang ref_id
+  
+  let refId = '';
+  
+  // Generate random string
+  for (let i = 0; i < length; i++) {
+    refId += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  
+  return refId;
 }
-

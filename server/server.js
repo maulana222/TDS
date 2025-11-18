@@ -3,6 +3,8 @@ import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import callbackRoutes from './routes/callbackRoutes.js';
@@ -11,9 +13,13 @@ import logRoutes from './routes/logRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import deleteRoutes from './routes/deleteRoutes.js';
 import telegramRoutes from './routes/telegramRoutes.js';
+import roleRoutes from './routes/roleRoutes.js';
 import pool from './config/database.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { initSocket } from './socket.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -49,9 +55,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// General rate limiting
-app.use('/api', apiRateLimiter);
-
 // Test database connection
 app.get('/health', async (req, res) => {
   try {
@@ -70,15 +73,21 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Routes
+// Callback route - TIDAK ada rate limiting (dipanggil dari external API)
+app.use('/api/callback', callbackRoutes);
+
+// General rate limiting untuk semua route API lainnya
+app.use('/api', apiRateLimiter);
+
+// Routes lainnya (dengan rate limiting)
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
-app.use('/api/callback', callbackRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/delete', deleteRoutes);
 app.use('/api/telegram', telegramRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Log registered routes
 console.log('📋 Registered routes:');

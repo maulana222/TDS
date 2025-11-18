@@ -138,10 +138,10 @@ function ConfigForm({ config, onChange, disabled, transactions = [] }) {
 
       {/* Tips Section */}
       <div className="border-t border-gray-200 pt-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-xs text-blue-800">
-            <span className="font-semibold">💡 Tips:</span> Gunakan delay untuk menghindari rate limiting. 
-            Delay 1-2 detik biasanya cukup aman untuk sebagian besar API.
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <p className="text-xs text-gray-600">
+            <span className="font-semibold">💡 Tips:</span> Delay bersifat opsional. 
+            Sistem tetap aman digunakan meskipun tanpa delay.
           </p>
         </div>
       </div>

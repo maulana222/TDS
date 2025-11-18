@@ -42,14 +42,17 @@ export const getTransactionStats = async (userId, filters = {}) => {
 
   try {
     const [rows] = await pool.execute(query, params);
-    const stats = rows[0] || {
-      total_transactions: 0,
-      successful_count: 0,
-      failed_count: 0,
-      avg_response_time: 0,
-      total_revenue: 0,
-      first_transaction: null,
-      last_transaction: null
+    const row = rows[0] || {};
+    
+    // Handle null values safely
+    const stats = {
+      total_transactions: row.total_transactions || 0,
+      successful_count: row.successful_count || 0,
+      failed_count: row.failed_count || 0,
+      avg_response_time: row.avg_response_time || 0,
+      total_revenue: row.total_revenue || 0,
+      first_transaction: row.first_transaction || null,
+      last_transaction: row.last_transaction || null
     };
 
     // Calculate success rate
@@ -66,12 +69,21 @@ export const getTransactionStats = async (userId, filters = {}) => {
       totalRevenue = 0;
     }
 
+    // Safely parse avg_response_time (handle null/undefined/string)
+    let avgResponseTime = 0;
+    try {
+      avgResponseTime = parseFloat(stats.avg_response_time || 0);
+      if (isNaN(avgResponseTime)) avgResponseTime = 0;
+    } catch (e) {
+      avgResponseTime = 0;
+    }
+
     return {
       total_transactions: parseInt(stats.total_transactions) || 0,
       successful_count: parseInt(stats.successful_count) || 0,
       failed_count: parseInt(stats.failed_count) || 0,
       success_rate: parseFloat(successRate.toFixed(2)),
-      avg_response_time: parseFloat((stats.avg_response_time || 0).toFixed(2)),
+      avg_response_time: parseFloat(avgResponseTime.toFixed(2)),
       total_revenue: totalRevenue,
       first_transaction: stats.first_transaction,
       last_transaction: stats.last_transaction

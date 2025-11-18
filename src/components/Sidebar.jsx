@@ -1,27 +1,31 @@
 import { Link, useLocation } from 'react-router-dom';
-import { getCurrentUser } from '../services/authService';
+import { getCurrentUser, isAdmin } from '../services/authService';
 import { 
   FiLayout, 
   FiHome, 
   FiTool,
   FiClock, 
-  FiSettings, 
   FiFileText,
   FiLogOut,
   FiX,
-  FiMenu
+  FiMenu,
+  FiUsers,
+  FiDatabase
 } from 'react-icons/fi';
 
 function Sidebar({ currentPage, setCurrentPage, onLogout, isOpen, onToggle, onClose, isCollapsed, onToggleCollapse }) {
   const user = getCurrentUser();
   const location = useLocation();
+  const admin = isAdmin();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: FiLayout, path: '/dashboard' },
     { id: 'tools', label: 'Tools', icon: FiTool, path: '/tools' },
-    { id: 'history', label: 'History', icon: FiClock, path: '/history' },
-    { id: 'settings', label: 'Settings', icon: FiSettings, path: '/settings' },
+    { id: 'transaction-management', label: 'Transaksi', icon: FiDatabase, path: '/transaction-management' },
+    // Only show Member for admin
+    ...(admin ? [{ id: 'member-management', label: 'Member', icon: FiUsers, path: '/member-management' }] : []),
     { id: 'logs', label: 'Logs', icon: FiFileText, path: '/logs' },
+    { id: 'history', label: 'History', icon: FiClock, path: '/history' },
   ];
 
   const handleMenuClick = (pageId) => {
@@ -63,20 +67,15 @@ function Sidebar({ currentPage, setCurrentPage, onLogout, isOpen, onToggle, onCl
           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
-         {/* Header dengan logo TDS - Fixed */}
+         {/* Header - Fixed */}
          <div 
            className={`fixed top-0 left-0 ${isCollapsed ? 'w-16' : 'w-64'} bg-white border-b border-gray-200 z-10 py-4 flex items-center transition-all duration-300 ${
-             isCollapsed ? 'px-2 justify-center' : 'px-6 justify-between'
+             isCollapsed ? 'px-2 justify-center' : 'px-6 justify-end'
            }`}
            style={{
              transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
            }}
          >
-          {!isCollapsed && (
-            <div className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-              TDS
-            </div>
-          )}
           <div className="flex items-center gap-2">
             {!isCollapsed && (
               <button

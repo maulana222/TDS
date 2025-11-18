@@ -13,8 +13,16 @@ import Logs from './pages/Logs';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Telegram from './pages/Telegram';
-import { isAuthenticated, logout, verifyToken, getCurrentUser } from './services/authService';
+import MemberManagement from './pages/MemberManagement';
+import TransactionManagement from './pages/TransactionManagement';
+import { isAuthenticated, logout, verifyToken, getCurrentUser, getUserRoles, isAdmin } from './services/authService';
 import { initSocket, disconnectSocket } from './services/socketService';
+
+// Component untuk proteksi route admin only
+function AdminOnlyRoute({ children }) {
+  const admin = isAdmin();
+  return admin ? children : <Navigate to="/dashboard" replace />;
+}
 
 function AppContent() {
   const navigate = useNavigate();
@@ -24,6 +32,7 @@ function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [socketInitialized, setSocketInitialized] = useState(false);
 
   // Get current page from URL
   const getCurrentPageFromPath = (pathname) => {
@@ -43,21 +52,29 @@ function AppContent() {
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
+  // Debounce untuk checkAuth agar tidak terlalu sering dipanggil
   useEffect(() => {
-    checkAuth();
+    const timeoutId = setTimeout(() => {
+      checkAuth();
+    }, 100); // Debounce 100ms
+
+    return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   const checkAuth = async () => {
     if (isAuthenticated()) {
       try {
-        await verifyToken();
+        // Gunakan cache untuk verifyToken, hanya force refresh jika diperlukan
+        // Ini mengurangi jumlah request ke server dan menghindari rate limit
+        await verifyToken(false);
         setIsLoggedIn(true);
         
-        // Initialize socket setelah login berhasil
+        // Initialize socket setelah login berhasil (hanya sekali)
         const user = getCurrentUser();
-        if (user && user.id) {
+        if (user && user.id && !socketInitialized) {
           initSocket(user.id);
+          setSocketInitialized(true);
         }
         
         // Redirect ke dashboard jika sudah login dan di root atau login
@@ -66,6 +83,7 @@ function AppContent() {
         }
       } catch (error) {
         setIsLoggedIn(false);
+        setSocketInitialized(false);
         disconnectSocket();
         if (location.pathname !== '/login') {
           navigate('/login', { replace: true });
@@ -73,6 +91,7 @@ function AppContent() {
       }
     } else {
       setIsLoggedIn(false);
+      setSocketInitialized(false);
       disconnectSocket();
       if (location.pathname !== '/login') {
         navigate('/login', { replace: true });
@@ -84,10 +103,11 @@ function AppContent() {
   const handleLoginSuccess = () => {
     setIsLoggedIn(true);
     
-    // Initialize socket setelah login berhasil
+    // Initialize socket setelah login berhasil (hanya sekali)
     const user = getCurrentUser();
-    if (user && user.id) {
+    if (user && user.id && !socketInitialized) {
       initSocket(user.id);
+      setSocketInitialized(true);
     }
     
     // Redirect ke dashboard setelah login berhasil
@@ -98,6 +118,7 @@ function AppContent() {
     logout();
     disconnectSocket(); // Disconnect socket saat logout
     setIsLoggedIn(false);
+    setSocketInitialized(false);
     navigate('/login', { replace: true });
   };
 
@@ -201,9 +222,6 @@ function AppContent() {
               >
                 <FiMenu className="w-6 h-6 text-gray-600" />
               </button>
-              <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                TDS
-              </div>
             </div>
             
             <ProfileDropdown 
@@ -214,7 +232,7 @@ function AppContent() {
         </header>
         
         <main className="flex-1 overflow-auto pt-[73px]">
-          <div className="max-w-7xl w-full mx-auto px-4 md:px-6 py-4 md:py-8">
+          <div className="max-w-[98%] w-full mx-auto px-2 md:px-4 py-4 md:py-8">
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tools" element={<Tools setCurrentPage={setCurrentPage} />} />
@@ -223,7 +241,12 @@ function AppContent() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/profile" element={<Profile />} />
-              <Route path="/telegram" element={<Telegram />} />
+              <Route 
+                path="/telegram" 
+                element={<AdminOnlyRoute><Telegram /></AdminOnlyRoute>} 
+              />
+              <Route path="/member-management" element={<MemberManagement />} />
+              <Route path="/transaction-management" element={<TransactionManagement />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

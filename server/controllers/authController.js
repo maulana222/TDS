@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database.js';
 import { checkSQLInjection } from '../middleware/security.js';
+import { getUserRoleNames } from '../models/roleModel.js';
 
 export const login = async (req, res) => {
   try {
@@ -30,7 +31,10 @@ export const login = async (req, res) => {
     // Get user from database menggunakan prepared statement (mencegah SQL injection)
     // Prepared statement dengan parameterized query sudah aman dari SQL injection
     const [users] = await pool.execute(
-      'SELECT id, username, password FROM users WHERE username = ?',
+      `SELECT u.id, u.username, u.password, u.role_id, r.name as role_name
+       FROM users u
+       LEFT JOIN roles r ON u.role_id = r.id
+       WHERE u.username = ?`,
       [sanitizedUsername]
     );
 
@@ -53,11 +57,28 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate JWT token
+    // Get user role (from role_id or fallback to getUserRoleNames)
+    let userRoles = [];
+    if (user.role_name) {
+      userRoles = [user.role_name];
+    } else {
+      userRoles = await getUserRoleNames(user.id);
+    }
+
+    // Check if user has role - jika tidak ada role, reject login
+    if (!userRoles || userRoles.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akun Anda belum memiliki role. Silakan hubungi administrator untuk mendapatkan akses.'
+      });
+    }
+
+    // Generate JWT token dengan roles
     const token = jwt.sign(
       { 
         id: user.id, 
-        username: user.username 
+        username: user.username,
+        roles: userRoles
       },
       process.env.JWT_SECRET || 'your-secret-key-change-this',
       { expiresIn: '24h' }
@@ -69,7 +90,8 @@ export const login = async (req, res) => {
       token,
       user: {
         id: user.id,
-        username: user.username
+        username: user.username,
+        roles: userRoles
       }
     });
   } catch (error) {
@@ -83,12 +105,28 @@ export const login = async (req, res) => {
 
 export const verifyToken = async (req, res) => {
   try {
-    // If middleware passes, token is valid
+    // Get fresh roles from database
+    const userRoles = await getUserRoleNames(req.user.id);
+    
+    // Check if user has role - jika tidak ada role, reject
+    if (!userRoles || userRoles.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akun Anda belum memiliki role. Silakan hubungi administrator untuk mendapatkan akses.'
+      });
+    }
+    
+    // Return user dengan fresh roles
     res.json({
       success: true,
-      user: req.user
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        roles: userRoles
+      }
     });
   } catch (error) {
+    console.error('Verify token error:', error);
     res.status(500).json({
       success: false,
       message: 'Terjadi kesalahan pada server'

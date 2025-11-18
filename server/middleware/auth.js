@@ -18,7 +18,12 @@ export const authenticateToken = (req, res, next) => {
         message: 'Invalid or expired token' 
       });
     }
-    req.user = user;
+    // Attach user dengan roles dari JWT
+    req.user = {
+      id: user.id,
+      username: user.username,
+      roles: user.roles || []
+    };
     next();
   });
 };

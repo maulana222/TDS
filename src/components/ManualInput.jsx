@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function ManualInput({ onGenerateTransactions, disabled }) {
+function ManualInput({ disabled }) {
   const [formData, setFormData] = useState({
     productCode: '',
     customerNumber: '',
@@ -14,37 +14,11 @@ function ManualInput({ onGenerateTransactions, disabled }) {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!formData.productCode.trim()) {
-      alert('Product Code harus diisi');
-      return;
-    }
-    
-    if (!formData.customerNumber.trim()) {
-      alert('Customer Number harus diisi');
-      return;
-    }
-    
-    const total = parseInt(formData.totalRequests) || 1;
-    if (total < 1 || total > 1000) {
-      alert('Jumlah request harus antara 1-1000');
-      return;
-    }
-    
-    // Generate transactions array
-    const transactions = Array.from({ length: total }, (_, index) => ({
-      customer_no: formData.customerNumber.trim(),
-      product_code: formData.productCode.trim(),
-      row_number: index + 1
-    }));
-    
-    onGenerateTransactions(transactions);
-  };
+  // handleSubmit tidak diperlukan lagi karena tombol Generate dihapus
+  // Transaksi akan di-generate langsung saat klik "Mulai Request"
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <label htmlFor="productCode" className="font-semibold text-gray-700 text-sm">
           Product Code <span className="text-red-500">*</span>
@@ -101,14 +75,7 @@ function ManualInput({ onGenerateTransactions, disabled }) {
         </small>
       </div>
 
-      <button
-        type="submit"
-        disabled={disabled || !formData.productCode.trim() || !formData.customerNumber.trim()}
-        className="w-full px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg"
-      >
-        🚀 Generate & Proses Transaksi
-      </button>
-    </form>
+    </div>
   );
 }
 

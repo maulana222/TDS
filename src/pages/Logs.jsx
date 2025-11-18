@@ -102,10 +102,10 @@ function Logs() {
 
   const getLogTypeLabel = (type) => {
     const labels = {
-      'callback_in': 'Callback In',
-      'callback_out': 'Callback Out',
-      'transaction_request': 'Transaction Request',
-      'transaction_response': 'Transaction Response',
+      'callback_in': 'Callback Masuk',
+      'callback_out': 'Callback Keluar',
+      'transaction_request': 'Request Transaksi',
+      'transaction_response': 'Response Transaksi',
       'error': 'Error'
     };
     return labels[type] || type;
@@ -129,7 +129,7 @@ function Logs() {
   return (
     <div className="w-full space-y-6">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Transaction Logs</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Log Transaksi</h1>
         <p className="text-gray-600">Lihat log callback dan transaksi</p>
       </div>
 
@@ -141,11 +141,11 @@ function Logs() {
             <span className="block text-2xl font-bold text-gray-900">{stats.total || 0}</span>
           </div>
           <div className="bg-blue-50 rounded-xl shadow-sm border border-blue-200 p-4 text-center">
-            <span className="block text-sm font-semibold text-blue-700 mb-1">Callback In</span>
+            <span className="block text-sm font-semibold text-blue-700 mb-1">Callback Masuk</span>
             <span className="block text-2xl font-bold text-blue-900">{stats.callback_in_count || 0}</span>
           </div>
           <div className="bg-purple-50 rounded-xl shadow-sm border border-purple-200 p-4 text-center">
-            <span className="block text-sm font-semibold text-purple-700 mb-1">Callback Out</span>
+            <span className="block text-sm font-semibold text-purple-700 mb-1">Callback Keluar</span>
             <span className="block text-2xl font-bold text-purple-900">{stats.callback_out_count || 0}</span>
           </div>
           <div className="bg-green-50 rounded-xl shadow-sm border border-green-200 p-4 text-center">
@@ -161,11 +161,11 @@ function Logs() {
             <span className="block text-2xl font-bold text-red-900">{stats.error_count || 0}</span>
           </div>
           <div className="bg-indigo-50 rounded-xl shadow-sm border border-indigo-200 p-4 text-center">
-            <span className="block text-sm font-semibold text-indigo-700 mb-1">Incoming</span>
+            <span className="block text-sm font-semibold text-indigo-700 mb-1">Masuk</span>
             <span className="block text-2xl font-bold text-indigo-900">{stats.incoming_count || 0}</span>
           </div>
           <div className="bg-yellow-50 rounded-xl shadow-sm border border-yellow-200 p-4 text-center">
-            <span className="block text-sm font-semibold text-yellow-700 mb-1">Outgoing</span>
+            <span className="block text-sm font-semibold text-yellow-700 mb-1">Keluar</span>
             <span className="block text-2xl font-bold text-yellow-900">{stats.outgoing_count || 0}</span>
           </div>
         </div>
@@ -177,14 +177,14 @@ function Logs() {
           <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
             <span className="text-indigo-600 text-xl">🔍</span>
           </div>
-          <h2 className="text-xl font-semibold text-gray-800">Filter Logs</h2>
+          <h2 className="text-xl font-semibold text-gray-800">Filter Log</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Log Type */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Log Type
+              Tipe Log
             </label>
             <select
               value={filters.log_type}
@@ -192,10 +192,10 @@ function Logs() {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">Semua</option>
-              <option value="callback_in">Callback In</option>
-              <option value="callback_out">Callback Out</option>
-              <option value="transaction_request">Transaction Request</option>
-              <option value="transaction_response">Transaction Response</option>
+              <option value="callback_in">Callback Masuk</option>
+              <option value="callback_out">Callback Keluar</option>
+              <option value="transaction_request">Request Transaksi</option>
+              <option value="transaction_response">Response Transaksi</option>
               <option value="error">Error</option>
             </select>
           </div>
@@ -203,7 +203,7 @@ function Logs() {
           {/* Direction */}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
-              Direction
+              Arah
             </label>
             <select
               value={filters.direction}
@@ -211,8 +211,8 @@ function Logs() {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="all">Semua</option>
-              <option value="incoming">Incoming</option>
-              <option value="outgoing">Outgoing</option>
+              <option value="incoming">Masuk</option>
+              <option value="outgoing">Keluar</option>
             </select>
           </div>
 
@@ -271,7 +271,7 @@ function Logs() {
             }}
             className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium"
           >
-            Reset Filter
+            Atur Ulang Filter
           </button>
         </div>
       </div>
@@ -279,13 +279,13 @@ function Logs() {
       {/* Logs Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Logs</h2>
+          <h2 className="text-xl font-semibold text-gray-800">Log</h2>
           <button
             onClick={loadLogs}
             disabled={loading}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 text-sm disabled:opacity-50"
           >
-            {loading ? '⏳ Loading...' : '🔄 Refresh'}
+            {loading ? '⏳ Memuat...' : '🔄 Muat Ulang'}
           </button>
         </div>
 
@@ -312,16 +312,16 @@ function Logs() {
                         No
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Type
+                        Tipe
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Direction
+                        Arah
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
                         Ref ID
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Method
+                        Metode
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
                         Endpoint
@@ -330,13 +330,13 @@ function Logs() {
                         Status
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Time
+                        Waktu
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Timestamp
+                        Waktu Dibuat
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">
-                        Action
+                        Aksi
                       </th>
                     </tr>
                   </thead>
@@ -358,7 +358,7 @@ function Logs() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                             <span className="text-lg">{getDirectionIcon(log.direction)}</span>
-                            <span className="ml-1 capitalize">{log.direction}</span>
+                            <span className="ml-1">{log.direction === 'incoming' ? 'Masuk' : 'Keluar'}</span>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
                             <span className="font-mono text-xs">{log.ref_id || '-'}</span>
@@ -429,7 +429,7 @@ function Logs() {
                 disabled={pagination.page === 1 || loading}
                 className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                « Prev
+                « Sebelumnya
               </button>
               
               <div className="flex items-center gap-1">
@@ -467,7 +467,7 @@ function Logs() {
                 disabled={pagination.page === pagination.totalPages || loading}
                 className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next »
+                Selanjutnya »
               </button>
               <button
                 onClick={() => handlePageChange(pagination.totalPages)}
@@ -486,7 +486,7 @@ function Logs() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-800">Log Detail</h3>
+              <h3 className="text-xl font-semibold text-gray-800">Detail Log</h3>
               <button
                 onClick={() => setSelectedLog(null)}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
@@ -498,37 +498,37 @@ function Logs() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Log Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Log</label>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLogTypeColor(selectedLog.log_type)}`}>
                       {getLogTypeLabel(selectedLog.log_type)}
                     </span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Direction</label>
-                    <p className="text-sm text-gray-900 capitalize">{selectedLog.direction}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Arah</label>
+                    <p className="text-sm text-gray-900">{selectedLog.direction === 'incoming' ? 'Masuk' : 'Keluar'}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Ref ID</label>
                     <p className="text-sm font-mono text-gray-900">{selectedLog.ref_id || '-'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kode Status</label>
                     <p className="text-sm text-gray-900">{selectedLog.status_code || '-'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Method</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Metode</label>
                     <p className="text-sm text-gray-900">{selectedLog.method || '-'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Execution Time</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Waktu Eksekusi</label>
                     <p className="text-sm text-gray-900">{selectedLog.execution_time ? `${selectedLog.execution_time}ms` : '-'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alamat IP</label>
                     <p className="text-sm text-gray-900">{selectedLog.ip_address || '-'}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Timestamp</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Waktu Dibuat</label>
                     <p className="text-sm text-gray-900">{selectedLog.created_at ? new Date(selectedLog.created_at).toLocaleString('id-ID') : '-'}</p>
                   </div>
                 </div>
@@ -542,7 +542,7 @@ function Logs() {
 
                 {selectedLog.request_body && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Request Body</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Body Request</label>
                     <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto max-h-60">
                       {JSON.stringify(selectedLog.request_body, null, 2)}
                     </pre>
@@ -551,7 +551,7 @@ function Logs() {
 
                 {selectedLog.response_body && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Response Body</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Body Response</label>
                     <pre className="text-xs bg-gray-50 p-3 rounded overflow-x-auto max-h-60">
                       {JSON.stringify(selectedLog.response_body, null, 2)}
                     </pre>
@@ -560,7 +560,7 @@ function Logs() {
 
                 {selectedLog.error_message && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Error Message</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pesan Error</label>
                     <p className="text-sm text-red-600 bg-red-50 p-3 rounded">{selectedLog.error_message}</p>
                   </div>
                 )}

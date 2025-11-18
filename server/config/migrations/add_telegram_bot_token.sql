@@ -1,7 +1,7 @@
 -- Migration: Add telegram_bot_token column to user_settings table
 -- Date: 2024
 
-USE snifer_db;
+USE tds_db;
 
 -- Add telegram_bot_token column if it doesn't exist
         ALTER TABLE user_settings 

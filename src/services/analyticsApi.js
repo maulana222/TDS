@@ -2,7 +2,14 @@
  * API service untuk analytics operations
  */
 
-const API_URL = 'http://localhost:3737';
+import { getSettings } from './settingsService';
+
+function getBackendUrl() {
+  const settings = getSettings();
+  return settings.backendUrl || import.meta.env.VITE_API_URL || 'http://localhost:3737';
+}
+
+const API_URL = getBackendUrl();
 
 /**
  * Get auth token dari localStorage
@@ -29,11 +36,12 @@ export async function getDashboardStats(filters = {}) {
       }
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      throw new Error('Failed to get dashboard stats');
+      throw new Error(data.message || 'Failed to get dashboard stats');
     }
 
-    const data = await response.json();
     return data.data;
   } catch (error) {
     console.error('Error getting dashboard stats:', error);

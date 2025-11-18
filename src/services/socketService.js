@@ -20,21 +20,33 @@ export const initSocket = (userId, batchId = null) => {
   });
 
   socket.on('connect', () => {
-    console.log('Socket connected:', socket.id);
-    
-    // Join room berdasarkan user_id
+    // Join room berdasarkan user_id (selalu join untuk menerima semua update)
     if (userId) {
-      socket.emit('join-room', `user:${userId}`);
+      const userRoom = `user:${userId}`;
+      socket.emit('join-room', userRoom);
     }
     
     // Join room berdasarkan batch_id
     if (batchId) {
-      socket.emit('join-room', `batch:${batchId}`);
+      const batchRoom = `batch:${batchId}`;
+      socket.emit('join-room', batchRoom);
     }
   });
+  
+  // Jika sudah connected, langsung join room
+  if (socket.connected) {
+    if (userId) {
+      const userRoom = `user:${userId}`;
+      socket.emit('join-room', userRoom);
+    }
+    if (batchId) {
+      const batchRoom = `batch:${batchId}`;
+      socket.emit('join-room', batchRoom);
+    }
+  }
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected');
+    // Socket disconnected
   });
 
   socket.on('connect_error', (error) => {
@@ -65,12 +77,18 @@ export const getSocket = () => {
  * Listen to transaction updates
  */
 export const onTransactionUpdate = (callback) => {
-  if (!socket) return () => {};
+  if (!socket) {
+    return () => {};
+  }
   
-  socket.on('transaction-updated', callback);
+  const handler = (updatedTransaction) => {
+    callback(updatedTransaction);
+  };
+  
+  socket.on('transaction-updated', handler);
   
   return () => {
-    socket.off('transaction-updated', callback);
+    socket.off('transaction-updated', handler);
   };
 };
 

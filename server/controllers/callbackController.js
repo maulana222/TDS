@@ -32,22 +32,44 @@ const parseDigiproCallback = (body) => {
     const refId = data.ref_id;
     
     // Determine success: status = "Sukses" atau rc = "00"
-    const isSuccess = data.status === 'Sukses' || data.rc === '00';
+    // Status "Pending" atau rc "03" berarti masih pending (belum final)
+    const isPending = data.status === 'Pending' || data.status === 'pending' || data.rc === '03';
+    const isSuccess = !isPending && (data.status === 'Sukses' || data.status === 'sukses' || data.rc === '00');
+    
+    // Determine status string
+    let statusString = data.status || 'Unknown';
+    if (isPending) {
+      statusString = 'Pending';
+    } else if (isSuccess) {
+      statusString = 'Sukses';
+    } else {
+      statusString = 'Gagal';
+    }
     
     return {
       ref_id: refId,
       success: isSuccess,
-      status_code: isSuccess ? 200 : 400,
+      status: statusString, // Status string: Pending, Sukses, Gagal
+      status_code: isSuccess ? 200 : (isPending ? 202 : 400), // 202 for pending
       response_data: data,
-      error_message: isSuccess ? null : (data.message || 'Transaksi Gagal'),
+      error_message: isSuccess ? null : (isPending ? null : (data.message || 'Transaksi Gagal')),
       raw_response: JSON.stringify(body)
     };
   }
   
   // Fallback ke format langsung (untuk backward compatibility)
+  // Determine status string dari response_data atau body
+  let statusString = body.status || body.response_data?.status || 'Unknown';
+  if (body.success === true) {
+    statusString = 'Sukses';
+  } else if (body.success === false) {
+    statusString = body.response_data?.status || 'Gagal';
+  }
+  
   return {
     ref_id: body.ref_id,
     success: body.success,
+    status: statusString, // Status string: Pending, Sukses, Gagal
     status_code: body.status_code,
     response_data: body.response_data,
     error_message: body.error_message,
@@ -87,7 +109,6 @@ export const handleCallback = async (req, res) => {
     const retryDelay = 500; // ms
     
     while (!transaction && retryCount < maxRetries) {
-      console.log(`Transaction ${ref_id} not found, waiting ${retryDelay}ms and retrying... (${retryCount + 1}/${maxRetries})`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
       transaction = await getTransactionByRefId(ref_id);
       retryCount++;
@@ -102,7 +123,6 @@ export const handleCallback = async (req, res) => {
       });
     }
     
-    console.log(`Updating transaction ${ref_id}, current status: success=${transaction.success}, new status: success=${success}`);
 
     // Verify signature jika ada secret key di env (untuk format langsung)
     const callbackSecret = process.env.CALLBACK_SECRET;
@@ -127,10 +147,16 @@ export const handleCallback = async (req, res) => {
     
     if (status_code !== undefined) updateData.status_code = status_code;
     if (success !== undefined) updateData.success = success;
+    if (parsed.status !== undefined) updateData.status = parsed.status; // Status string
     if (response_data !== undefined) updateData.response_data = response_data;
     if (error_message !== undefined) updateData.error_message = error_message;
     if (raw_response !== undefined) updateData.raw_response = raw_response;
     if (response_time !== undefined) updateData.response_time = response_time;
+    
+    // Extract sn from response_data if available and transaction is successful
+    if (response_data && success && response_data.sn) {
+      updateData.sn = response_data.sn;
+    }
 
     const updateResult = await updateTransactionByRefId(ref_id, updateData);
 

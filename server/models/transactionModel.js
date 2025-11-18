@@ -19,12 +19,15 @@ export const saveTransaction = async (transactionData, userId, batchId = null) =
     row_number
   } = transactionData;
 
+  // Extract sn from response data if available
+  const sn = data?.sn || null;
+
   const [result] = await pool.execute(
     `INSERT INTO transactions (
       user_id, customer_no, customer_no_used, product_code, ref_id, signature,
-      status_code, success, response_time, response_data, error_message, raw_response,
-      row_number, batch_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      status_code, success, status, response_time, response_data, error_message, raw_response,
+      row_number, batch_id, sn
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId,
       customer_no,
@@ -32,14 +35,16 @@ export const saveTransaction = async (transactionData, userId, batchId = null) =
       product_code,
       ref_id,
       signature || '',
-      status || null,
+      status || null, // status_code (HTTP status)
       success ? 1 : 0,
+      transactionData.status || null, // status string (Pending, Sukses, Gagal)
       responseTime || null,
       data ? JSON.stringify(data) : null,
       error || null,
       rawResponse || null,
       row_number || null,
-      batchId
+      batchId,
+      sn
     ]
   );
 
@@ -71,6 +76,9 @@ export const saveTransactions = async (transactions, userId, batchId = null) => 
       row_number
     } = tx;
 
+    // Extract sn from response data if available
+    const sn = data?.sn || null;
+
     values.push(
       userId,
       customer_no,
@@ -78,24 +86,26 @@ export const saveTransactions = async (transactions, userId, batchId = null) => 
       product_code,
       ref_id,
       signature || '',
-      status || null,
+      status || null, // status_code (HTTP status)
       success ? 1 : 0,
+      tx.status || null, // status string (Pending, Sukses, Gagal)
       responseTime || null,
       data ? JSON.stringify(data) : null,
       error || null,
       rawResponse || null,
       row_number || null,
-      batchId
+      batchId,
+      sn
     );
 
-    placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
   }
 
   const query = `
     INSERT INTO transactions (
       user_id, customer_no, customer_no_used, product_code, ref_id, signature,
-      status_code, success, response_time, response_data, error_message, raw_response,
-      row_number, batch_id
+      status_code, success, status, response_time, response_data, error_message, raw_response,
+      row_number, batch_id, sn
     ) VALUES ${placeholders.join(', ')}
   `;
 
@@ -122,8 +132,8 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
   let query = `
     SELECT 
       id, customer_no, customer_no_used, product_code, ref_id,
-      status_code, success, response_time, response_data, error_message,
-      row_number, batch_id, created_at
+      status_code, success, status, response_time, response_data, error_message,
+      row_number, batch_id, created_at, sn
     FROM transactions
     WHERE user_id = ?
   `;
@@ -368,8 +378,8 @@ export const getTransactionByRefId = async (refId) => {
   const [rows] = await pool.execute(
     `SELECT 
       id, user_id, customer_no, customer_no_used, product_code, ref_id,
-      status_code, success, response_time, response_data, error_message,
-      raw_response, batch_id, created_at
+      status_code, success, status, response_time, response_data, error_message,
+      raw_response, batch_id, created_at, sn
     FROM transactions
     WHERE ref_id = ?
     LIMIT 1`,
@@ -393,10 +403,12 @@ export const updateTransactionByRefId = async (refId, updateData) => {
   const {
     status_code,
     success,
+    status,
     response_time,
     response_data,
     error_message,
-    raw_response
+    raw_response,
+    sn
   } = updateData;
 
   const updates = [];
@@ -410,6 +422,11 @@ export const updateTransactionByRefId = async (refId, updateData) => {
   if (success !== undefined) {
     updates.push('success = ?');
     params.push(success ? 1 : 0);
+  }
+
+  if (status !== undefined) {
+    updates.push('status = ?');
+    params.push(status);
   }
 
   if (response_time !== undefined) {
@@ -430,6 +447,11 @@ export const updateTransactionByRefId = async (refId, updateData) => {
   if (raw_response !== undefined) {
     updates.push('raw_response = ?');
     params.push(raw_response);
+  }
+
+  if (sn !== undefined) {
+    updates.push('sn = ?');
+    params.push(sn);
   }
 
   if (updates.length === 0) {
@@ -476,6 +498,10 @@ export const updateBatchStats = async (batchId) => {
     );
   }
 };
+
+
+
+
 
 
 

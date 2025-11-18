@@ -5,7 +5,6 @@ import ManualInput from '../components/ManualInput';
 import ConfigForm from '../components/ConfigForm';
 import TransactionMonitor from '../components/TransactionMonitor';
 import ExcelPreview from '../components/ExcelPreview';
-import FilterForm from '../components/FilterForm';
 import { parseExcelFile } from '../services/excelService';
 import { processTransactions } from '../services/transactionService';
 import { exportToExcel } from '../services/excelService';
@@ -26,6 +25,7 @@ import {
   joinBatchRoom 
 } from '../services/socketService';
 import { getCurrentUser } from '../services/authService';
+import { getSettings } from '../services/settingsService';
 
 function Home() {
   const [transactions, setTransactions] = useState([]);
@@ -40,7 +40,7 @@ function Home() {
   const [config, setConfig] = useState({
     delay: 0
   });
-  const [inputMode, setInputMode] = useState('excel'); // 'excel' or 'manual'
+  const [inputMode, setInputMode] = useState('manual'); // 'excel' or 'manual' - default ke manual
   const cancelTokenRef = useRef({ cancelled: false });
   const notifiedRefs = useRef(new Set()); // Track ref_id yang sudah di-notify
   const [loadingFromDB, setLoadingFromDB] = useState(false);
@@ -76,6 +76,26 @@ function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.startDate, filters.endDate, filters.status, filters.customerNo, filters.productCode]);
+
+  // Load settings saat komponen mount untuk set default delay
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await getSettings();
+        if (settings && settings.defaultDelay !== undefined) {
+          setConfig(prev => ({
+            ...prev,
+            delay: settings.defaultDelay || 0
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+        // Tetap gunakan default delay: 0 jika error
+      }
+    };
+    
+    loadSettings();
+  }, []);
 
   const loadTransactions = async (resetPage = false) => {
     try {
@@ -137,13 +157,15 @@ function Home() {
           customer_no_used: tx.customer_no_used,
           product_code: tx.product_code,
           success: tx.success,
-          status: tx.status_code,
+          status: tx.status_code, // HTTP status code
+          statusString: tx.status || tx.response_data?.status || (tx.success ? 'Sukses' : 'Gagal'), // Status string
           data: tx.response_data,
           error: tx.error_message,
           rawResponse: tx.raw_response,
           row_number: tx.row_number,
           responseTime: tx.response_time,
-          timestamp: tx.created_at
+          timestamp: tx.created_at,
+          sn: tx.sn
         }));
 
         // Sort berdasarkan timestamp terbaru di atas
@@ -165,7 +187,6 @@ function Home() {
           }));
         }
         
-        console.log(`Loaded ${dbResults.length} transactions from database (page ${currentPage})`);
       }
     } catch (error) {
       console.error('Error loading transactions from database:', error);
@@ -189,7 +210,6 @@ function Home() {
   useEffect(() => {
     // Listen untuk transaction updates
     const unsubscribeTransaction = onTransactionUpdate((updatedTransaction) => {
-      console.log('Transaction updated via socket:', updatedTransaction);
       
       const refId = updatedTransaction.ref_id;
       const notificationKey = `${refId}_${updatedTransaction.success}_${updatedTransaction.status_code}`;
@@ -212,9 +232,11 @@ function Home() {
             ...newResults[index],
             success: updatedTransaction.success,
             status: updatedTransaction.status_code,
+            statusString: updatedTransaction.status || updatedTransaction.response_data?.status || (updatedTransaction.success ? 'Sukses' : 'Gagal'),
             data: updatedTransaction.response_data,
             error: updatedTransaction.error_message,
             rawResponse: updatedTransaction.raw_response,
+            sn: updatedTransaction.sn || newResults[index].sn,
             timestamp: updatedTransaction.updated_at || updatedTransaction.created_at || newResults[index].timestamp || new Date().toISOString()
           };
           
@@ -225,21 +247,11 @@ function Home() {
             return timeB - timeA; // DESC: terbaru di atas
           });
           
-          // Show toast notification HANYA jika status berubah dan belum di-notify
+          // Tidak menampilkan toast notification untuk setiap transaksi
+          // Hanya update state saja
           if (statusChanged && !notifiedRefs.current.has(notificationKey)) {
             notifiedRefs.current.add(notificationKey);
-            
-            if (updatedTransaction.success) {
-              toast.success(`Transaksi ${refId} berhasil!`, {
-                duration: 3000,
-                id: `tx-${refId}` // ID untuk prevent duplicate
-              });
-            } else {
-              toast.error(`Transaksi ${refId} gagal: ${updatedTransaction.error_message || 'Unknown error'}`, {
-                duration: 4000,
-                id: `tx-${refId}` // ID untuk prevent duplicate
-              });
-            }
+            // Toast notification dihapus sesuai permintaan user
           }
           
           return newResults;
@@ -253,10 +265,12 @@ function Home() {
             product_code: updatedTransaction.product_code,
             success: updatedTransaction.success,
             status: updatedTransaction.status_code,
+            statusString: updatedTransaction.status || updatedTransaction.response_data?.status || (updatedTransaction.success ? 'Sukses' : 'Gagal'),
             data: updatedTransaction.response_data,
             error: updatedTransaction.error_message,
             rawResponse: updatedTransaction.raw_response,
             row_number: updatedTransaction.row_number,
+            sn: updatedTransaction.sn,
             timestamp: updatedTransaction.updated_at || updatedTransaction.created_at || new Date().toISOString()
           };
           
@@ -266,21 +280,11 @@ function Home() {
           today.setHours(0, 0, 0, 0);
           const isToday = txDate >= today;
           
-          // Show toast notification HANYA jika belum di-notify
+          // Tidak menampilkan toast notification untuk setiap transaksi
+          // Hanya update state saja
           if (!notifiedRefs.current.has(notificationKey)) {
             notifiedRefs.current.add(notificationKey);
-            
-            if (updatedTransaction.success) {
-              toast.success(`Transaksi ${refId} berhasil! (Update dari callback)`, {
-                duration: 3000,
-                id: `tx-${refId}` // ID untuk prevent duplicate
-              });
-            } else {
-              toast.error(`Transaksi ${refId} gagal: ${updatedTransaction.error_message || 'Unknown error'} (Update dari callback)`, {
-                duration: 4000,
-                id: `tx-${refId}` // ID untuk prevent duplicate
-              });
-            }
+            // Toast notification dihapus sesuai permintaan user
           }
           
           // Hanya tambahkan jika dari hari ini
@@ -299,11 +303,10 @@ function Home() {
       });
     });
 
-    // Listen untuk batch updates
-    const unsubscribeBatch = onBatchUpdate((updatedBatch) => {
-      console.log('Batch updated via socket:', updatedBatch);
-      // Bisa update batch statistics di sini jika perlu
-    });
+            // Listen untuk batch updates
+            const unsubscribeBatch = onBatchUpdate((updatedBatch) => {
+              // Bisa update batch statistics di sini jika perlu
+            });
 
     // Cleanup saat unmount
     return () => {
@@ -368,8 +371,45 @@ function Home() {
   };
 
   const handleStart = async (resume = false) => {
-    // Jika resume, gunakan remaining transactions, jika tidak gunakan semua transactions
-    const transactionsToProcess = resume ? remainingTransactions : transactions;
+    let transactionsToProcess = [];
+    
+    // Jika manual input dan belum ada transactions, generate dulu
+    if (!resume && inputMode === 'manual' && transactions.length === 0) {
+      // Get data dari ManualInput component
+      const manualInputForm = document.querySelector('#manualInputForm');
+      if (manualInputForm) {
+        const productCode = document.querySelector('#productCode')?.value?.trim();
+        const customerNumber = document.querySelector('#customerNumber')?.value?.trim();
+        const totalRequests = parseInt(document.querySelector('#totalRequests')?.value) || 1;
+        
+        if (!productCode || !customerNumber) {
+          toast.error('Product Code dan Customer Number harus diisi');
+          return;
+        }
+        
+        if (totalRequests < 1 || totalRequests > 1000) {
+          toast.error('Jumlah request harus antara 1-1000');
+          return;
+        }
+        
+        // Generate transactions
+        const manualTransactions = Array.from({ length: totalRequests }, (_, index) => ({
+          customer_no: customerNumber,
+          product_code: productCode,
+          row_number: index + 1
+        }));
+        
+        setTransactions(manualTransactions);
+        // Langsung gunakan transactions yang baru di-generate tanpa toast "mempersiapkan"
+        transactionsToProcess = manualTransactions;
+      } else {
+        toast.error('Silakan isi data transaksi terlebih dahulu');
+        return;
+      }
+    } else {
+      // Jika resume, gunakan remaining transactions, jika tidak gunakan semua transactions
+      transactionsToProcess = resume ? remainingTransactions : transactions;
+    }
     
     if (transactionsToProcess.length === 0) {
       toast.error('Silakan input data terlebih dahulu (Excel atau Manual)');
@@ -391,13 +431,11 @@ function Home() {
       // Data baru akan muncul di atas karena di-sort berdasarkan timestamp
       setProgress({ current: 0, total: transactions.length, progress: 0 });
       
-      // Create batch di database
-      try {
-        await createBatch(batchId, transactions.length, config);
-      } catch (error) {
+      // Create batch di database (async, tidak blocking proses)
+      createBatch(batchId, transactions.length, config).catch(error => {
         console.error('Error creating batch:', error);
         // Continue even if batch creation fails
-      }
+      });
     } else {
       // Resume menggunakan batch ID yang sama
       batchId = currentBatchId;
@@ -413,12 +451,8 @@ function Home() {
     const totalToProcess = transactionsToProcess.length;
     const startIndex = resume ? results.length : 0;
     
-    toast.loading(
-      resume 
-        ? `Melanjutkan proses... ${totalToProcess} transaksi tersisa`
-        : `Memproses ${totalToProcess} transaksi...`, 
-      { id: 'processing' }
-    );
+    // Langsung mulai proses tanpa toast loading yang menampilkan "mempersiapkan"
+    // Proses langsung dimulai tanpa delay
 
     try {
       // Konversi delay dari detik ke milidetik
@@ -473,33 +507,40 @@ function Home() {
           // Ini penting agar callback dari Digipro bisa menemukan transaction
           if (batchId && progressData.result && progressData.result.ref_id) {
             try {
+              // Determine status and success from response
+              const responseData = progressData.result.data || {};
+              const isPending = progressData.result.isPending || 
+                               responseData.status === 'Pending' || 
+                               responseData.status === 'pending' || 
+                               responseData.rc === '03';
+              
+              // If pending, set success to false (0) and status to "Pending"
+              const transactionStatus = isPending ? 'Pending' : (responseData.status || progressData.result.status);
+              const transactionSuccess = isPending ? false : progressData.result.success;
+              
               const transactionToSave = {
                 customer_no: progressData.result.customer_no,
                 customer_no_used: progressData.result.customer_no_used || progressData.result.customer_no,
                 product_code: progressData.result.product_code,
                 ref_id: progressData.result.ref_id,
                 signature: '',
-                status: progressData.result.status,
-                success: progressData.result.success,
+                status: transactionStatus, // Status string: "Pending", "Sukses", etc.
+                success: transactionSuccess, // Boolean: false for pending, true for success
                 responseTime: progressData.result.responseTime,
-                data: progressData.result.data,
-                error: progressData.result.error,
+                data: responseData,
+                error: progressData.result.error || (isPending ? null : (responseData.message || null)),
                 rawResponse: progressData.result.rawResponse,
                 row_number: progressData.result.row_number
               };
               
-              await saveTransactionsToDB([transactionToSave], batchId);
-              console.log(`Transaction ${progressData.result.ref_id} saved to database`);
+                      await saveTransactionsToDB([transactionToSave], batchId);
             } catch (dbError) {
               console.error('Error saving transaction to database:', dbError);
               // Continue even if DB save fails
             }
           }
           
-          // Update toast dengan progress
-          if (currentProgress.current === currentProgress.total || cancelTokenRef.current.cancelled) {
-            toast.dismiss('processing');
-          }
+          // Progress update sudah ditampilkan via progress bar, tidak perlu toast
         },
         delayInMs,
         cancelTokenRef.current
@@ -561,10 +602,11 @@ function Home() {
       // untuk memastikan callback dari Digipro bisa menemukan transaction
       
       // Simpan history (localStorage backup)
+      // Gunakan transactionResults yang dikembalikan dari processTransactions
       try {
         await saveTransactionHistory({
-          transactions,
-          results: finalResults,
+          transactions: transactionsToProcess,
+          results: transactionResults,
           config,
           batch_id: batchId,
           timestamp: new Date().toISOString()
@@ -575,15 +617,15 @@ function Home() {
 
       // Notifikasi selesai
       if (cancelTokenRef.current.cancelled) {
-        const processedCount = finalResults.length;
+        const processedCount = transactionResults.length;
         const remainingCount = transactions.length - processedCount;
         toast.error(
           `Proses dihentikan. ${processedCount} dari ${transactions.length} transaksi sudah diproses. ${remainingCount} transaksi tersisa.`,
           { duration: 5000 }
         );
       } else {
-        const successCount = finalResults.filter(r => r.success).length;
-        const failedCount = finalResults.filter(r => !r.success).length;
+        const successCount = transactionResults.filter(r => r.success).length;
+        const failedCount = transactionResults.filter(r => !r.success).length;
         toast.success(
           `Selesai! ${successCount} berhasil, ${failedCount} gagal dari ${transactions.length} transaksi`,
           { duration: 5000 }
@@ -593,7 +635,6 @@ function Home() {
       toast.error(`Error: ${error.message}`);
     } finally {
       setIsProcessing(false);
-      toast.dismiss('processing');
     }
   };
 
@@ -755,9 +796,9 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
 
       {/* Main Content - Flexible Layout */}
       <div className="space-y-10">
-        {/* Top Section - Upload & Config Side by Side */}
+        {/* Top Section - Manual Input (Kiri) & Excel Upload (Kanan) Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Step 1: Input Mode Selection */}
+          {/* Step 1: Manual Input (Kiri) */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="mb-5">
               <div className="flex items-center gap-3 mb-2">
@@ -772,20 +813,6 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
             <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
               <button
                 onClick={() => {
-                  setInputMode('excel');
-                  setTransactions([]);
-                }}
-                disabled={isProcessing}
-                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
-                  inputMode === 'excel'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                📊 Excel Upload
-              </button>
-              <button
-                onClick={() => {
                   setInputMode('manual');
                   setTransactions([]);
                 }}
@@ -798,12 +825,31 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
               >
                 ✏️ Manual Input
               </button>
+              <button
+                onClick={() => {
+                  setInputMode('excel');
+                  setTransactions([]);
+                }}
+                disabled={isProcessing}
+                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                  inputMode === 'excel'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                📊 Excel Upload
+              </button>
             </div>
 
             {/* Content berdasarkan mode */}
-            {inputMode === 'excel' ? (
+            {inputMode === 'manual' ? (
               <>
-                <ExcelUpload onFileUpload={handleFileUpload} />
+                <form id="manualInputForm">
+                  <ManualInput 
+                    onGenerateTransactions={handleManualGenerate}
+                    disabled={isProcessing}
+                  />
+                </form>
                 {transactions.length > 0 && (
                   <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <div className="flex items-center justify-between">
@@ -824,10 +870,7 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
               </>
             ) : (
               <>
-                <ManualInput 
-                  onGenerateTransactions={handleManualGenerate}
-                  disabled={isProcessing}
-                />
+                <ExcelUpload onFileUpload={handleFileUpload} />
                 {transactions.length > 0 && (
                   <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                     <div className="flex items-center justify-between">
@@ -847,6 +890,41 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
                 )}
               </>
             )}
+
+            {/* Action Buttons di bawah Step 1 */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  className={`flex-1 px-5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isProcessing || (transactions.length === 0 && inputMode === 'excel')
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                  }`}
+                  onClick={() => handleStart(false)}
+                  disabled={isProcessing || (transactions.length === 0 && inputMode === 'excel')}
+                >
+                  {isProcessing ? 'Memproses...' : '🚀 Mulai Request'}
+                </button>
+                
+                {isProcessing && (
+                  <button
+                    onClick={handleStop}
+                    className="px-5 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                  >
+                    Hentikan Transaksi
+                  </button>
+                )}
+                
+                {isPaused && !isProcessing && remainingTransactions.length > 0 && (
+                  <button
+                    onClick={handleResume}
+                    className="px-5 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg transition-colors"
+                  >
+                    Lanjutkan ({remainingTransactions.length})
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Step 2: Konfigurasi */}
@@ -869,80 +947,32 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
           </div>
         </div>
 
-        {/* Right Column - Monitor & Results (2/3 width) */}
-        <div className="xl:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            {/* Header Section */}
-            <div className="mb-6 pb-6 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-sm font-semibold text-gray-500">STEP 3</span>
-                    <div className="flex-1 h-px bg-gray-200"></div>
-                  </div>
-                  <h2 className="text-lg font-semibold text-gray-900">Monitor & Hasil</h2>
-                  <p className="text-sm text-gray-500 mt-1">Pantau progress dan hasil transaksi real-time</p>
+        {/* Monitor & Results Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          {/* Header Section */}
+          <div className="mb-6 pb-6 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-sm font-semibold text-gray-500">STEP 3</span>
+                  <div className="flex-1 h-px bg-gray-200"></div>
                 </div>
-                
-                <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => loadTransactions()}
-                  disabled={loadingFromDB}
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
-                  title="Refresh data dari database"
-                >
-                  {loadingFromDB ? 'Loading...' : 'Refresh'}
-                </button>
-                
-                {isProcessing && (
-                  <button
-                    onClick={handleStop}
-                    className="px-5 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg transition-colors"
-                  >
-                    Stop
-                  </button>
-                )}
-                
-                {isPaused && !isProcessing && remainingTransactions.length > 0 && (
-                  <button
-                    onClick={handleResume}
-                    className="px-5 py-2.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-900 rounded-lg transition-colors"
-                  >
-                    Lanjutkan ({remainingTransactions.length})
-                  </button>
-                )}
-                
-                <button 
-                  className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isProcessing || transactions.length === 0
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-gray-900 text-white hover:bg-gray-800'
-                  }`}
-                  onClick={() => handleStart(false)}
-                  disabled={isProcessing || transactions.length === 0}
-                >
-                  {isProcessing ? 'Memproses...' : 'Mulai Request'}
-                </button>
+                <h2 className="text-lg font-semibold text-gray-900">Monitor & Hasil</h2>
+                <p className="text-sm text-gray-500 mt-1">Pantau progress dan hasil transaksi real-time</p>
               </div>
+              
+              <button
+                onClick={() => loadTransactions()}
+                disabled={loadingFromDB}
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh data dari database"
+              >
+                {loadingFromDB ? 'Loading...' : 'Refresh'}
+              </button>
             </div>
           </div>
       
           <div className="space-y-6">
-            <FilterForm 
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onReset={() => {
-            setFilters({
-              startDate: '',
-              endDate: '',
-              status: 'all',
-              customerNo: '',
-              productCode: ''
-            });
-            setPagination(prev => ({ ...prev, page: 1 }));
-          }}
-        />
-        
         <TransactionMonitor 
           progress={progress}
           results={results}
@@ -991,7 +1021,6 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
           </div>
         </div>
       </div>
-    </div>
 
       {/* Excel Preview Modal */}
       {showPreview && (
