@@ -1,9 +1,9 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS tds_db;
+CREATE DATABASE tds_db;
 USE tds_db;
 
 -- Create users table
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
@@ -21,7 +21,7 @@ ON DUPLICATE KEY UPDATE username=username;
 -- Untuk generate password hash baru, gunakan bcrypt dengan salt rounds 10
 
 -- Create transactions table
-CREATE TABLE IF NOT EXISTS transactions (
+CREATE TABLE transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   customer_no VARCHAR(50) NOT NULL COMMENT 'Original customer number dari Excel',
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Create transaction_batches table untuk tracking batch processing
-CREATE TABLE IF NOT EXISTS transaction_batches (
+CREATE TABLE transaction_batches (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   batch_id VARCHAR(100) UNIQUE NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS transaction_batches (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Create user_settings table untuk menyimpan settings per user
-CREATE TABLE IF NOT EXISTS user_settings (
+CREATE TABLE user_settings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL UNIQUE,
   default_delay DECIMAL(10, 2) DEFAULT 0 COMMENT 'Default delay antar request dalam detik',
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Create transaction_logs table untuk menyimpan log callback dan transaksi
-CREATE TABLE IF NOT EXISTS transaction_logs (
+CREATE TABLE transaction_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   transaction_id INT DEFAULT NULL COMMENT 'ID dari tabel transactions jika terkait dengan transaksi',
