@@ -93,17 +93,3 @@ export async function deleteTransactionById(transactionId) {
 }
 
 
-
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to delete transaction');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error deleting transaction:', error);
-    throw error;
-  }
-}
-
-

@@ -207,9 +207,3 @@ export async function getBatches(limit = 20) {
   }
 }
 
-
-    console.error('Error getting batches:', error);
-    throw error;
-  }
-}
-
