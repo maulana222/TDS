@@ -8,7 +8,9 @@ let io = null;
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:8888',
+      origin: process.env.FRONTEND_URL 
+        ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+        : ['http://localhost:8888', 'http://localhost:3000'],
       methods: ['GET', 'POST'],
       credentials: true
     }

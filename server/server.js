@@ -45,11 +45,36 @@ app.use(helmet({
 }));
 
 // CORS configuration
+// Support multiple origins untuk development dan production
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['http://localhost:8888', 'http://localhost:3000'];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8888',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1 || 
+        process.env.NODE_ENV === 'development' ||
+        origin?.includes('localhost')) {
+      callback(null, true);
+    } else {
+      // For production, allow if origin matches domain pattern
+      if (process.env.NODE_ENV === 'production' && origin) {
+        const allowedPattern = process.env.FRONTEND_URL?.replace(/https?:\/\//, '').split('/')[0];
+        if (allowedPattern && origin.includes(allowedPattern)) {
+          return callback(null, true);
+        }
+      }
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 // Body parser dengan size limit

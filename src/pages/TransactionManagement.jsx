@@ -549,9 +549,9 @@ function TransactionManagement() {
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h3 className="text-base font-semibold text-gray-900">
-              Daftar Transaksi {pagination.total > 0 && `(${pagination.total})`}
-            </h3>
+          <h3 className="text-base font-semibold text-gray-900">
+            Daftar Transaksi {pagination.total > 0 && `(${pagination.total})`}
+          </h3>
             {transactions.length > 0 && (
               <>
                 <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">

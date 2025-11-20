@@ -2,7 +2,8 @@
  * API service untuk log operations
  */
 
-const API_URL = 'http://localhost:3737';
+// Gunakan relative path untuk production, atau environment variable
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3737');
 
 /**
  * Get auth token dari localStorage

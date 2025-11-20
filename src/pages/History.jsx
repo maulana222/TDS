@@ -21,7 +21,7 @@ function History() {
   useEffect(() => {
     // Jika member, jangan load history
     if (!isMember) {
-      loadHistoryList();
+    loadHistoryList();
     } else {
       // Set empty untuk member
       setHistoryFiles([]);
@@ -293,29 +293,29 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
           <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200">
             <FiClock className="w-7 h-7 text-gray-700" />
           </div>
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Transaction History</h1>
-            <p className="text-gray-600">Lihat dan kelola riwayat transaksi sebelumnya</p>
-          </div>
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Transaction History</h1>
+          <p className="text-gray-600">Lihat dan kelola riwayat transaksi sebelumnya</p>
+        </div>
         </div>
         {!isMember && (
-          <button
-            onClick={handleDeleteAll}
-            disabled={deleting}
+        <button
+          onClick={handleDeleteAll}
+          disabled={deleting}
             className="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {deleting ? (
+        >
+          {deleting ? (
               <>
-                <span className="animate-spin">⏳</span>
+              <span className="animate-spin">⏳</span>
                 <span>Menghapus...</span>
               </>
-            ) : (
+          ) : (
               <>
                 <FiTrash2 className="w-4 h-4" />
                 <span>Hapus Semua</span>
               </>
-            )}
-          </button>
+          )}
+        </button>
         )}
       </div>
       
@@ -364,11 +364,11 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
                     ? 'bg-gray-50 border-gray-300'
                     : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                 }`}>
-                  <button 
+                <button 
                     onClick={() => !isMember && handleLoadHistory(file)}
                     disabled={isMember}
                     className="flex-1 flex items-center gap-2 text-left text-sm font-medium text-gray-700 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                >
                     <FiFileText className="w-4 h-4 text-gray-500 flex-shrink-0" />
                     <span className="truncate">{file}</span>
                   </button>
@@ -381,7 +381,7 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
                       <FiTrash2 className="w-4 h-4" />
                     </button>
                   )}
-                </div>
+                  </div>
               </li>
             ))}
           </ul>
@@ -392,27 +392,27 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
             <div>
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-200">
                       <FiClock className="w-5 h-5 text-gray-700" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-800">Detail History</h2>
-                      {selectedHistory.timestamp && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          {new Date(selectedHistory.timestamp).toLocaleString('id-ID')}
-                        </p>
-                      )}
-                    </div>
                   </div>
-                  {selectedHistory.batch_id && (
-                    <div className="text-sm text-gray-600">
-                      Batch ID: <span className="font-mono font-semibold">{selectedHistory.batch_id}</span>
-                    </div>
-                  )}
+                  <div>
+                      <h2 className="text-lg font-semibold text-gray-800">Detail History</h2>
+                    {selectedHistory.timestamp && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {new Date(selectedHistory.timestamp).toLocaleString('id-ID')}
+                      </p>
+                    )}
+                  </div>
                 </div>
+                {selectedHistory.batch_id && (
+                  <div className="text-sm text-gray-600">
+                    Batch ID: <span className="font-mono font-semibold">{selectedHistory.batch_id}</span>
+                  </div>
+                )}
+              </div>
 
-                {/* Stats Cards */}
+              {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
                     <span className="block text-xs font-medium text-gray-600 mb-1">Berhasil</span>
@@ -421,11 +421,11 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
                   <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
                     <span className="block text-xs font-medium text-gray-600 mb-1">Gagal</span>
                     <span className="block text-2xl font-bold text-gray-900">{failedCount}</span>
-                  </div>
+                </div>
                   <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
                     <span className="block text-xs font-medium text-gray-600 mb-1">Total</span>
                     <span className="block text-2xl font-bold text-gray-900">{selectedHistory.results?.length || 0}</span>
-                  </div>
+                </div>
                 </div>
               </div>
 
@@ -584,7 +584,7 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
                                     return (
                                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                         Failed
-                                      </span>
+                                </span>
                                     );
                                   }
                                 })()}
@@ -653,7 +653,7 @@ Timestamp: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleStr
                 {isMember ? 'Tidak ada data history untuk member' : 'Pilih file history untuk melihat detail'}
               </p>
               {!isMember && (
-                <p className="text-gray-400 text-sm mt-2">Klik salah satu file di sebelah kiri</p>
+              <p className="text-gray-400 text-sm mt-2">Klik salah satu file di sebelah kiri</p>
               )}
             </div>
           )}

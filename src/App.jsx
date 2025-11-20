@@ -57,7 +57,7 @@ function AppContent() {
   // Debounce untuk checkAuth agar tidak terlalu sering dipanggil
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      checkAuth();
+    checkAuth();
     }, 100); // Debounce 100ms
 
     return () => clearTimeout(timeoutId);

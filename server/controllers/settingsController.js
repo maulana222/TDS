@@ -38,20 +38,20 @@ export const saveSettingsHandler = async (req, res) => {
 
     // Validasi required fields untuk Digiprosb (jika diisi)
     if (settings.digiprosb_username || settings.digiprosb_api_key || settings.digiprosb_endpoint) {
-      if (!settings.digiprosb_username || !settings.digiprosb_api_key || !settings.digiprosb_endpoint) {
-        return res.status(400).json({
-          success: false,
+    if (!settings.digiprosb_username || !settings.digiprosb_api_key || !settings.digiprosb_endpoint) {
+      return res.status(400).json({
+        success: false,
           message: 'Jika mengisi Digiprosb, Username, API Key, dan API Endpoint harus diisi semua'
-        });
-      }
+      });
+    }
       // Validasi URL endpoint Digiprosb
-      try {
-        new URL(settings.digiprosb_endpoint);
-      } catch (e) {
-        return res.status(400).json({
-          success: false,
+    try {
+      new URL(settings.digiprosb_endpoint);
+    } catch (e) {
+      return res.status(400).json({
+        success: false,
           message: 'Digiprosb API Endpoint harus berupa URL yang valid'
-        });
+      });
       }
     }
 
