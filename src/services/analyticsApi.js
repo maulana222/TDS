@@ -4,9 +4,9 @@
 
 import { getSettings } from './settingsService';
 
-// Gunakan relative path untuk production (via Nginx proxy), atau environment variable
+// Gunakan environment variable atau IP VPS
 function getBackendUrl() {
-  return import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3737');
+  return import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
 }
 
 const API_URL = getBackendUrl();
@@ -69,6 +69,16 @@ export async function getStats(filters = {}) {
     if (!response.ok) {
       throw new Error('Failed to get stats');
     }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error getting stats:', error);
+    throw error;
+  }
+}
+
+
 
     const data = await response.json();
     return data.data;

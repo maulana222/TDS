@@ -4,9 +4,9 @@
 
 import { getSettings } from './settingsService';
 
-// Gunakan relative path untuk production (via Nginx proxy), atau environment variable
+// Gunakan environment variable atau IP VPS
 function getBackendUrl() {
-  return import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3737');
+  return import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
 }
 
 /**
@@ -202,6 +202,12 @@ export async function getBatches(limit = 20) {
     const data = await response.json();
     return data;
   } catch (error) {
+    console.error('Error getting batches:', error);
+    throw error;
+  }
+}
+
+
     console.error('Error getting batches:', error);
     throw error;
   }

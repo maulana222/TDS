@@ -22,7 +22,14 @@ import { initSocket } from './socket.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
+// Load .env file - cari dari root project
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// Log environment untuk debugging
+console.log('[ENV] NODE_ENV:', process.env.NODE_ENV);
+console.log('[ENV] PORT:', process.env.PORT);
+console.log('[ENV] FRONTEND_URL:', process.env.FRONTEND_URL);
+console.log('[ENV] DB_HOST:', process.env.DB_HOST);
 
 const app = express();
 const server = createServer(app);
@@ -48,7 +55,9 @@ app.use(helmet({
 // Build allowed origins list
 const allowedOrigins = [];
 if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(...process.env.FRONTEND_URL.split(',').map(url => url.trim()));
+  const urls = process.env.FRONTEND_URL.split(',').map(url => url.trim());
+  allowedOrigins.push(...urls);
+  console.log(`[CORS] Allowed origins from FRONTEND_URL: ${urls.join(', ')}`);
 }
 // Add default development origins
 allowedOrigins.push('http://localhost:8888', 'http://localhost:3000');
@@ -57,29 +66,40 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, curl, etc)
     if (!origin) {
+      console.log('[CORS] Allowing request with no origin');
       return callback(null, true);
     }
     
+    console.log(`[CORS] Request from origin: ${origin}`);
+    console.log(`[CORS] NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`[CORS] FRONTEND_URL: ${process.env.FRONTEND_URL}`);
+    
     // Check exact match
     if (allowedOrigins.includes(origin)) {
+      console.log(`[CORS] Allowed: exact match`);
       return callback(null, true);
     }
     
     // In production, allow if origin matches domain pattern from FRONTEND_URL
     if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
-      const frontendUrl = process.env.FRONTEND_URL.split(',')[0].trim();
-      const domain = frontendUrl.replace(/https?:\/\//, '').split('/')[0];
-      if (origin.includes(domain)) {
-        return callback(null, true);
+      const frontendUrls = process.env.FRONTEND_URL.split(',').map(url => url.trim());
+      for (const frontendUrl of frontendUrls) {
+        const domain = frontendUrl.replace(/https?:\/\//, '').split('/')[0];
+        if (origin.includes(domain)) {
+          console.log(`[CORS] Allowed: domain match (${domain})`);
+          return callback(null, true);
+        }
       }
     }
     
     // Development: always allow localhost
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      console.log(`[CORS] Allowed: localhost`);
       return callback(null, true);
     }
     
-    console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+    console.warn(`[CORS] BLOCKED origin: ${origin}`);
+    console.warn(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
     callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
   credentials: true,
@@ -157,9 +177,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+// Listen di semua interface (0.0.0.0) agar bisa diakses dari luar
+const HOST = process.env.HOST || '0.0.0.0';
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
   console.log(`🔌 Socket.IO ready`);
   console.log(`✅ All routes loaded successfully`);
   console.log(`📋 Available routes:`);

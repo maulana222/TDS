@@ -2,8 +2,8 @@
  * API service untuk settings operations
  */
 
-// Gunakan relative path untuk production, atau environment variable
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3737');
+// Gunakan environment variable atau IP VPS
+const API_URL = import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
 
 /**
  * Get auth token dari localStorage
@@ -111,4 +111,19 @@ export function clearSettingsCache() {
   // This is just a placeholder, actual cache clearing is in settingsService
   // But we export it here for convenience
 }
+
+
+
+    throw error;
+  }
+}
+
+/**
+ * Clear settings cache (helper untuk clear cache di settingsService)
+ */
+export function clearSettingsCache() {
+  // This is just a placeholder, actual cache clearing is in settingsService
+  // But we export it here for convenience
+}
+
 

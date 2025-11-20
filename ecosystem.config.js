@@ -4,9 +4,11 @@ export default {
     script: 'server/server.js',
     instances: 1,
     exec_mode: 'fork',
+    env_file: '.env', // PM2 akan membaca .env file
     env: {
       NODE_ENV: 'production',
       PORT: 3737,
+      // FRONTEND_URL akan diambil dari .env file
     },
     error_file: './logs/pm2-error.log',
     out_file: './logs/pm2-out.log',

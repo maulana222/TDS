@@ -2,8 +2,8 @@
  * API service untuk delete operations
  */
 
-// Gunakan relative path untuk production, atau environment variable
-const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3737');
+// Gunakan environment variable atau IP VPS
+const API_URL = import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
 
 /**
  * Get auth token dari localStorage
@@ -91,4 +91,19 @@ export async function deleteTransactionById(transactionId) {
     throw error;
   }
 }
+
+
+
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete transaction');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting transaction:', error);
+    throw error;
+  }
+}
+
 
