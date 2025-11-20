@@ -4,7 +4,8 @@ import {
   getLogsHandler,
   getLogByIdHandler,
   getLogStatsHandler,
-  createLogHandler
+  createLogHandler,
+  deleteAllLogsHandler
 } from '../controllers/logController.js';
 
 const router = express.Router();
@@ -21,7 +22,11 @@ router.get('/', getLogsHandler);
 // Get log statistics
 router.get('/stats', getLogStatsHandler);
 
-// Get log by ID
+// Delete all logs (user's own logs, or all logs if admin)
+// HARUS ditempatkan SEBELUM route dengan parameter :id
+router.delete('/', deleteAllLogsHandler);
+
+// Get log by ID (harus di bawah route delete untuk menghindari konflik)
 router.get('/:id', getLogByIdHandler);
 
 export default router;

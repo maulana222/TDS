@@ -126,3 +126,27 @@ export async function saveTransactionLog(logData) {
   }
 }
 
+/**
+ * Delete all logs (user's own logs, or all logs if admin)
+ */
+export async function deleteAllLogs() {
+  try {
+    const response = await fetch(`${API_URL}/api/logs`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete logs');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting logs:', error);
+    throw error;
+  }
+}
+

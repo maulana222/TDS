@@ -10,7 +10,7 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'tds_db',
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 20, // Tingkatkan dari 10 ke 20 untuk handle concurrent callbacks
   queueLimit: 0,
   // Security settings
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,

@@ -51,6 +51,9 @@ export async function saveSettings(settings) {
       digiprosb_username: settings.digiprosbUsername || null,
       digiprosb_api_key: settings.digiprosbApiKey || null,
       digiprosb_endpoint: settings.digiprosbEndpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction',
+      digiflazz_username: settings.digiflazzUsername || null,
+      digiflazz_api_key: settings.digiflazzApiKey || null,
+      digiflazz_endpoint: settings.digiflazzEndpoint || 'https://api.digiflazz.com/v1/transaction',
       telegram_bot_token: settings.telegramBotToken || null
     };
 

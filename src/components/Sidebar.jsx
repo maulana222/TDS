@@ -10,7 +10,8 @@ import {
   FiX,
   FiMenu,
   FiUsers,
-  FiDatabase
+  FiDatabase,
+  FiWifi
 } from 'react-icons/fi';
 
 function Sidebar({ currentPage, setCurrentPage, onLogout, isOpen, onToggle, onClose, isCollapsed, onToggleCollapse }) {
@@ -24,6 +25,7 @@ function Sidebar({ currentPage, setCurrentPage, onLogout, isOpen, onToggle, onCl
     { id: 'transaction-management', label: 'Transaksi', icon: FiDatabase, path: '/transaction-management' },
     // Only show Member for admin
     ...(admin ? [{ id: 'member-management', label: 'Member', icon: FiUsers, path: '/member-management' }] : []),
+    { id: 'connections', label: 'Koneksi', icon: FiWifi, path: '/connections' },
     { id: 'logs', label: 'Logs', icon: FiFileText, path: '/logs' },
     { id: 'history', label: 'History', icon: FiClock, path: '/history' },
   ];

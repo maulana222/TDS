@@ -197,3 +197,22 @@ export const getLogById = async (logId, userId) => {
   };
 };
 
+/**
+ * Delete all logs for a user
+ */
+export const deleteAllLogs = async (userId) => {
+  const [result] = await pool.execute(
+    `DELETE FROM transaction_logs WHERE user_id = ?`,
+    [userId]
+  );
+  return result.affectedRows;
+};
+
+/**
+ * Delete all logs (admin only)
+ */
+export const deleteAllLogsAdmin = async () => {
+  const [result] = await pool.execute(`DELETE FROM transaction_logs`);
+  return result.affectedRows;
+};
+

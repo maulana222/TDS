@@ -134,7 +134,7 @@ export const getDailyTrend = async (userId, days = 7) => {
         total: parseInt(row.total) || 0,
         successful: parseInt(row.successful) || 0,
         failed: parseInt(row.failed) || 0,
-        avg_response_time: parseFloat((row.avg_response_time || 0).toFixed(2))
+        avg_response_time: parseFloat(parseFloat(row.avg_response_time || 0).toFixed(2))
       };
     });
   } catch (error) {
@@ -212,7 +212,7 @@ export const getTopProducts = async (userId, limit = 10, filters = {}) => {
         success_rate: row.transaction_count > 0
           ? parseFloat(((row.successful_count / row.transaction_count) * 100).toFixed(2))
           : 0,
-        avg_response_time: parseFloat((row.avg_response_time || 0).toFixed(2)),
+        avg_response_time: parseFloat(parseFloat(row.avg_response_time || 0).toFixed(2)),
         total_revenue: totalRevenue
       };
     });

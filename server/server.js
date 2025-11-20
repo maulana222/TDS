@@ -14,6 +14,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import deleteRoutes from './routes/deleteRoutes.js';
 import telegramRoutes from './routes/telegramRoutes.js';
 import roleRoutes from './routes/roleRoutes.js';
+import connectionRoutes from './routes/connectionRoutes.js';
 import pool from './config/database.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { initSocket } from './socket.js';
@@ -74,7 +75,12 @@ app.get('/health', async (req, res) => {
 });
 
 // Callback route - TIDAK ada rate limiting (dipanggil dari external API)
-app.use('/api/callback', callbackRoutes);
+// Pastikan callback route ditempatkan SEBELUM general rate limiter
+app.use('/api/callback', (req, res, next) => {
+  // Log untuk debugging rate limiting
+  console.log(`[CALLBACK ROUTE] ${req.method} ${req.path} - No rate limiting applied`);
+  next();
+}, callbackRoutes);
 
 // General rate limiting untuk semua route API lainnya
 app.use('/api', apiRateLimiter);
@@ -88,6 +94,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/delete', deleteRoutes);
 app.use('/api/telegram', telegramRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/connections', connectionRoutes);
 
 // Log registered routes
 console.log('📋 Registered routes:');

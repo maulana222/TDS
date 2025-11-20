@@ -4,6 +4,14 @@ import { Card, CardBody, Typography } from '@material-tailwind/react';
 import Chart from 'react-apexcharts';
 import { getDashboardStats } from '../services/analyticsApi';
 import { getCurrentUser, getUserRoles } from '../services/authService';
+import { 
+  FiBarChart2, 
+  FiCheckCircle, 
+  FiDollarSign, 
+  FiClock, 
+  FiRefreshCw,
+  FiX
+} from 'react-icons/fi';
 
 function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -64,7 +72,9 @@ function Dashboard() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">⏳</div>
+          <div className="animate-spin text-4xl mb-4 text-gray-400">
+            <FiRefreshCw className="w-10 h-10" />
+          </div>
           <p className="text-gray-600">Memuat data dashboard...</p>
         </div>
       </div>
@@ -75,7 +85,7 @@ function Dashboard() {
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">📊</span>
+          <FiBarChart2 className="w-8 h-8 text-gray-400" />
         </div>
         <p className="text-gray-700 font-semibold mb-1">Tidak ada data untuk ditampilkan</p>
         <p className="text-sm text-gray-500 mb-4">Belum ada transaksi atau terjadi error saat memuat data</p>
@@ -126,11 +136,11 @@ function Dashboard() {
       data: dailyTrend.map(d => d.total)
     },
     {
-      name: 'Success',
+      name: 'Berhasil',
       data: dailyTrend.map(d => d.successful)
     },
     {
-      name: 'Failed',
+      name: 'Gagal',
       data: dailyTrend.map(d => d.failed)
     }
   ];
@@ -141,7 +151,7 @@ function Dashboard() {
       type: 'donut',
       height: 350
     },
-    labels: ['Success', 'Failed'],
+    labels: ['Berhasil', 'Gagal'],
     colors: ['#10b981', '#ef4444'],
     legend: {
       position: 'bottom'
@@ -170,7 +180,7 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-lg font-semibold text-blue-700">
-                      👋 Selamat datang, {user?.username || 'Member'}!
+                      Selamat datang, {user?.username || 'Member'}!
                     </p>
                     <p className="text-sm text-blue-600 mt-1">
                       Anda login sebagai Member. Nikmati fitur-fitur yang tersedia.
@@ -180,7 +190,7 @@ function Dashboard() {
                     onClick={() => setShowWelcome(false)}
                     className="text-blue-400 hover:text-blue-600 transition-colors"
                   >
-                    ✕
+                    <FiX className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -190,7 +200,7 @@ function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-lg font-semibold text-purple-700">
-                      👋 Halo admin, {user?.username || 'Admin'}!
+                      Halo admin, {user?.username || 'Admin'}!
                     </p>
                     <p className="text-sm text-purple-600 mt-1">
                       Selamat datang di Dashboard Administrator.
@@ -200,7 +210,7 @@ function Dashboard() {
                     onClick={() => setShowWelcome(false)}
                     className="text-purple-400 hover:text-purple-600 transition-colors"
                   >
-                    ✕
+                    <FiX className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -222,9 +232,10 @@ function Dashboard() {
             </select>
             <button
               onClick={loadDashboardData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
-              🔄 Refresh
+              <FiRefreshCw className="w-4 h-4" />
+              Muat Ulang
             </button>
           </div>
         </div>
@@ -248,7 +259,7 @@ function Dashboard() {
                 </Typography>
               </div>
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">📊</span>
+                <FiBarChart2 className="w-8 h-8 text-blue-600" />
               </div>
             </div>
           </CardBody>
@@ -260,7 +271,7 @@ function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <Typography variant="small" color="gray" className="font-medium">
-                  Success Rate
+                  Tingkat Keberhasilan
                 </Typography>
                 <Typography variant="h4" className="mt-2 text-green-600">
                   {overall.success_rate?.toFixed(2) || 0}%
@@ -270,7 +281,7 @@ function Dashboard() {
                 </Typography>
               </div>
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">✅</span>
+                <FiCheckCircle className="w-8 h-8 text-green-600" />
               </div>
             </div>
           </CardBody>
@@ -282,7 +293,7 @@ function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <Typography variant="small" color="gray" className="font-medium">
-                  Total Revenue
+                  Total Pendapatan
                 </Typography>
                 <Typography variant="h4" className="mt-2 text-purple-600">
                   Rp {overall.total_revenue?.toLocaleString('id-ID') || 0}
@@ -292,7 +303,7 @@ function Dashboard() {
                 </Typography>
               </div>
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">💰</span>
+                <FiDollarSign className="w-8 h-8 text-purple-600" />
               </div>
             </div>
           </CardBody>
@@ -304,7 +315,7 @@ function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <Typography variant="small" color="gray" className="font-medium">
-                  Avg Response Time
+                  Rata-rata Waktu Respon
                 </Typography>
                 <Typography variant="h4" className="mt-2 text-orange-600">
                   {overall.avg_response_time || 0}ms
@@ -314,7 +325,7 @@ function Dashboard() {
                 </Typography>
               </div>
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
-                <span className="text-3xl">⚡</span>
+                <FiClock className="w-8 h-8 text-orange-600" />
               </div>
             </div>
           </CardBody>
@@ -342,7 +353,7 @@ function Dashboard() {
         <Card className="shadow-lg border border-gray-200">
           <CardBody>
             <Typography variant="h6" className="mb-4 text-gray-800">
-              Success vs Failed
+              Berhasil vs Gagal
             </Typography>
             <Chart
               options={successFailedChartOptions}

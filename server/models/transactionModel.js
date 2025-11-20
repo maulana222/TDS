@@ -122,6 +122,7 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
     success = null,
     customerNo = null,
     productCode = null,
+    refId = null,
     startDate = null,
     endDate = null
   } = filters;
@@ -159,6 +160,11 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
   if (productCode) {
     query += ' AND product_code = ?';
     params.push(productCode);
+  }
+
+  if (refId) {
+    query += ' AND ref_id = ?';
+    params.push(refId);
   }
 
   if (startDate) {
@@ -460,17 +466,66 @@ export const updateTransactionByRefId = async (refId, updateData) => {
 
   params.push(refId);
 
-  const [result] = await pool.execute(
-    `UPDATE transactions 
-     SET ${updates.join(', ')}
-     WHERE ref_id = ?`,
-    params
-  );
-
-  return {
-    updated: result.affectedRows > 0,
-    affectedRows: result.affectedRows
-  };
+  // Gunakan SELECT ... FOR UPDATE untuk lock row dan prevent race condition
+  // Ini memastikan hanya satu callback yang bisa update transaction pada waktu yang sama
+  const dbStartTime = Date.now();
+  const connection = await pool.getConnection();
+  console.log(`[DB UPDATE] Got connection for ref_id: ${refId}, time: ${Date.now() - dbStartTime}ms`);
+  
+  try {
+    const txStartTime = Date.now();
+    await connection.beginTransaction();
+    console.log(`[DB UPDATE] Transaction started for ref_id: ${refId}, time: ${Date.now() - txStartTime}ms`);
+    
+    // Lock row dengan SELECT FOR UPDATE
+    const lockStartTime = Date.now();
+    const [existingRows] = await connection.execute(
+      `SELECT id, ref_id, status, success, status_code 
+       FROM transactions 
+       WHERE ref_id = ? 
+       FOR UPDATE`,
+      [refId]
+    );
+    const lockTime = Date.now() - lockStartTime;
+    console.log(`[DB UPDATE] Locked transaction ${refId}, current status: ${existingRows[0]?.status || 'N/A'}, success: ${existingRows[0]?.success || 'N/A'}, lock time: ${lockTime}ms`);
+    
+    if (existingRows.length === 0) {
+      await connection.rollback();
+      console.log(`[DB UPDATE] Transaction ${refId} not found, rolled back`);
+      return { updated: false, message: 'Transaction not found' };
+    }
+    
+    const existing = existingRows[0];
+    
+    // Update transaction
+    const updateStartTime = Date.now();
+    const [result] = await connection.execute(
+      `UPDATE transactions 
+       SET ${updates.join(', ')}
+       WHERE ref_id = ?`,
+      params
+    );
+    const updateTime = Date.now() - updateStartTime;
+    console.log(`[DB UPDATE] Updated transaction ${refId}, affectedRows: ${result.affectedRows}, update time: ${updateTime}ms`);
+    
+    const commitStartTime = Date.now();
+    await connection.commit();
+    const commitTime = Date.now() - commitStartTime;
+    console.log(`[DB UPDATE] Committed transaction ${refId}, commit time: ${commitTime}ms, total DB time: ${Date.now() - dbStartTime}ms`);
+    
+    return {
+      updated: result.affectedRows > 0,
+      affectedRows: result.affectedRows
+    };
+  } catch (error) {
+    console.error(`[DB UPDATE] Error updating transaction ${refId}:`, error);
+    await connection.rollback();
+    console.log(`[DB UPDATE] Rolled back transaction ${refId} due to error`);
+    throw error;
+  } finally {
+    connection.release();
+    console.log(`[DB UPDATE] Released connection for ref_id: ${refId}`);
+  }
 };
 
 /**

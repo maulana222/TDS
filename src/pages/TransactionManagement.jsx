@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { 
   FiRefreshCw, 
@@ -7,7 +7,9 @@ import {
   FiTrash2, 
   FiEye, 
   FiX, 
-  FiDatabase 
+  FiDatabase,
+  FiCheckCircle,
+  FiCopy
 } from 'react-icons/fi';
 import { getTransactions } from '../services/transactionApi';
 import { deleteTransactionById } from '../services/deleteApi';
@@ -18,6 +20,10 @@ function TransactionManagement() {
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const contextMenuRef = useRef(null);
+  const [selectedTransactions, setSelectedTransactions] = useState(new Set());
+  const [checkingStatus, setCheckingStatus] = useState(false);
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
@@ -212,6 +218,185 @@ function TransactionManagement() {
     setSelectedTransaction(transaction);
   };
 
+  // Handle context menu (right click)
+  const handleContextMenu = (e, transaction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      transaction
+    });
+  };
+
+  // Close context menu
+  const closeContextMenu = () => {
+    setContextMenu(null);
+  };
+
+  // Check transaction status (single)
+  const handleCheckStatus = async (transaction) => {
+    try {
+      closeContextMenu();
+      await checkStatusForTransactions([transaction]);
+    } catch (error) {
+      console.error('Error checking status:', error);
+      toast.error('Gagal mengecek status transaksi');
+    }
+  };
+
+  // Check status for multiple transactions
+  const checkStatusForTransactions = async (transactionsToCheck) => {
+    try {
+      setCheckingStatus(true);
+      const count = transactionsToCheck.length;
+      toast.loading(`Mengecek status ${count} transaksi...`, { id: 'check-status' });
+      
+      // Call backend API untuk check status
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3737';
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch(`${API_URL}/api/transactions/check-status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ref_ids: transactionsToCheck.map(tx => tx.ref_id)
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.results) {
+        // Update transactions di state
+        setTransactions(prev => 
+          prev.map(tx => {
+            const updated = data.results.find(r => r.ref_id === tx.ref_id);
+            return updated ? { ...tx, ...updated } : tx;
+          })
+        );
+
+        // Count results
+        const successCount = data.results.filter(r => r.success).length;
+        const pendingCount = data.results.filter(r => {
+          const status = r.status || r.response_data?.status;
+          return status === 'Pending' || status === 'pending' || r.response_data?.rc === '03';
+        }).length;
+        const failedCount = data.results.length - successCount - pendingCount;
+
+        toast.dismiss('check-status');
+        
+        if (pendingCount > 0) {
+          toast(`Status checked: ${successCount} Success, ${pendingCount} Pending, ${failedCount} Failed`, { 
+            icon: '⏳', 
+            duration: 4000 
+          });
+        } else if (failedCount > 0) {
+          toast(`Status checked: ${successCount} Success, ${failedCount} Failed`, { 
+            icon: failedCount > successCount ? '❌' : '✅', 
+            duration: 4000 
+          });
+        } else {
+          toast.success(`Status checked: Semua ${successCount} transaksi berhasil`);
+        }
+
+        // Clear selection
+        setSelectedTransactions(new Set());
+      } else {
+        toast.dismiss('check-status');
+        toast.error(data.message || 'Gagal mengecek status transaksi');
+      }
+    } catch (error) {
+      toast.dismiss('check-status');
+      console.error('Error checking status:', error);
+      toast.error('Gagal mengecek status transaksi');
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
+  // Handle multiple check status
+  const handleCheckStatusMultiple = async () => {
+    if (selectedTransactions.size === 0) {
+      toast.error('Pilih transaksi terlebih dahulu');
+      return;
+    }
+
+    const selected = transactions.filter(tx => selectedTransactions.has(tx.id));
+    await checkStatusForTransactions(selected);
+  };
+
+  // Toggle selection
+  const toggleSelection = (transactionId) => {
+    setSelectedTransactions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(transactionId)) {
+        newSet.delete(transactionId);
+      } else {
+        newSet.add(transactionId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    if (selectedTransactions.size === transactions.length) {
+      setSelectedTransactions(new Set());
+    } else {
+      setSelectedTransactions(new Set(transactions.map(tx => tx.id)));
+    }
+  };
+
+  // Copy transaction data to clipboard
+  const handleCopyData = async (transaction) => {
+    try {
+      closeContextMenu();
+      
+      const dataToCopy = {
+        ref_id: transaction.ref_id,
+        customer_no: transaction.customer_no,
+        customer_no_used: transaction.customer_no_used,
+        product_code: transaction.product_code,
+        status: transaction.status || transaction.response_data?.status || (transaction.success ? 'Sukses' : 'Gagal'),
+        success: transaction.success,
+        sn: transaction.sn || transaction.response_data?.sn,
+        rc: transaction.response_data?.rc,
+        message: transaction.response_data?.message || transaction.error_message,
+        timestamp: transaction.created_at,
+        response_data: transaction.response_data
+      };
+
+      const jsonString = JSON.stringify(dataToCopy, null, 2);
+      await navigator.clipboard.writeText(jsonString);
+      toast.success('Data transaksi berhasil disalin ke clipboard');
+    } catch (error) {
+      console.error('Error copying data:', error);
+      toast.error('Gagal menyalin data');
+    }
+  };
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
+        closeContextMenu();
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('contextmenu', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('contextmenu', handleClickOutside);
+    };
+  }, [contextMenu]);
+
   if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -363,9 +548,34 @@ function TransactionManagement() {
       {/* Transactions Table */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">
-            Daftar Transaksi {pagination.total > 0 && `(${pagination.total})`}
-          </h3>
+          <div className="flex items-center gap-4">
+            <h3 className="text-base font-semibold text-gray-900">
+              Daftar Transaksi {pagination.total > 0 && `(${pagination.total})`}
+            </h3>
+            {transactions.length > 0 && (
+              <>
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedTransactions.size === transactions.length && transactions.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span>Pilih Semua</span>
+                </label>
+                {selectedTransactions.size > 0 && (
+                  <button
+                    onClick={handleCheckStatusMultiple}
+                    disabled={checkingStatus}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FiCheckCircle className="w-4 h-4" />
+                    Cek Status ({selectedTransactions.size})
+                  </button>
+                )}
+              </>
+            )}
+          </div>
           {transactions.length > 0 && (
             <button
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-2"
@@ -381,14 +591,21 @@ function TransactionManagement() {
           <table className="w-full border-collapse border border-gray-300">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase border-r border-gray-200 w-12">
+                  <input
+                    type="checkbox"
+                    checked={selectedTransactions.size === transactions.length && transactions.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Tanggal</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Ref ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Customer</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Product</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">Ref ID</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">SN</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase border-r border-gray-200">RC</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase">Aksi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -403,10 +620,23 @@ function TransactionManagement() {
                  transactions.map((transaction, idx) => {
                    return (
                      <tr 
-                       key={`${transaction.id}_${transaction.success}_${transaction.status_code}_${transaction.updated_at || transaction.created_at}`} 
-                       className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors`}
+                       key={transaction.id || `tx_${idx}_${transaction.ref_id}`} 
+                       className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors cursor-context-menu select-none`}
+                       onContextMenu={(e) => handleContextMenu(e, transaction)}
                      >
-                      <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
+                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                        <input
+                          type="checkbox"
+                          checked={selectedTransactions.has(transaction.id)}
+                          onChange={() => toggleSelection(transaction.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
                         {new Date(transaction.created_at).toLocaleString('id-ID', {
                           day: '2-digit',
                           month: 'short',
@@ -415,7 +645,42 @@ function TransactionManagement() {
                           minute: '2-digit'
                         })}
                       </td>
-                      <td className="px-4 py-3 border-r border-gray-200">
+                      <td 
+                        className="px-4 py-3 border-r border-gray-200"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
+                        <span className="text-sm font-mono text-gray-700">{transaction.ref_id || '-'}</span>
+                      </td>
+                      <td 
+                        className="px-4 py-3 border-r border-gray-200"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
+                        <span className="text-sm text-gray-900 font-mono">
+                          {transaction.customer_no_used || transaction.customer_no}
+                        </span>
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-sm text-gray-900 font-medium border-r border-gray-200"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
+                        {transaction.product_code}
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
+                        <span className="font-mono text-xs">{transaction.sn || transaction.response_data?.sn || '-'}</span>
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
+                        {transaction.response_data?.rc || '-'}
+                      </td>
+                      <td 
+                        className="px-4 py-3"
+                        onContextMenu={(e) => handleContextMenu(e, transaction)}
+                      >
                         {(() => {
                           const statusString = transaction.status || transaction.response_data?.status || (transaction.success ? 'Sukses' : 'Gagal');
                           const isPending = statusString === 'Pending' || statusString === 'pending' || transaction.response_data?.rc === '03';
@@ -440,41 +705,6 @@ function TransactionManagement() {
                             );
                           }
                         })()}
-                      </td>
-                      <td className="px-4 py-3 border-r border-gray-200">
-                        <span className="text-sm text-gray-900 font-mono">
-                          {transaction.customer_no_used || transaction.customer_no}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 font-medium border-r border-gray-200">
-                        {transaction.product_code}
-                      </td>
-                      <td className="px-4 py-3 border-r border-gray-200">
-                        <span className="text-sm font-mono text-gray-700">{transaction.ref_id || '-'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200">
-                        <span className="font-mono text-xs">{transaction.sn || transaction.response_data?.sn || '-'}</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 border-r border-gray-200">
-                        {transaction.response_data?.rc || '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleViewDetail(transaction)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Lihat detail"
-                          >
-                            <FiEye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(transaction.id, transaction.ref_id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                            title="Hapus transaksi"
-                          >
-                            <FiTrash2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   );
@@ -644,6 +874,34 @@ function TransactionManagement() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50 min-w-[180px]"
+          style={{
+            left: `${Math.min(contextMenu.x, window.innerWidth - 200)}px`,
+            top: `${Math.min(contextMenu.y, window.innerHeight - 100)}px`,
+            transform: contextMenu.x > window.innerWidth - 200 ? 'translateX(-100%)' : 'none'
+          }}
+        >
+          <button
+            onClick={() => handleCheckStatus(contextMenu.transaction)}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+          >
+            <FiCheckCircle className="w-4 h-4 text-blue-600" />
+            <span>Cek Status</span>
+          </button>
+          <button
+            onClick={() => handleCopyData(contextMenu.transaction)}
+            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+          >
+            <FiCopy className="w-4 h-4 text-gray-600" />
+            <span>Copy Data</span>
+          </button>
         </div>
       )}
     </div>

@@ -86,15 +86,31 @@ const parseDigiproCallback = (body) => {
  * 2. Direct format: { ref_id, success, status_code, response_data, ... }
  */
 export const handleCallback = async (req, res) => {
+  const callbackId = req.callbackRequestId || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const startTime = req.callbackStartTime || Date.now();
+  
   try {
     const body = req.body;
+    
+    // Logging sudah dilakukan di route level, hanya log parsing di sini
+    console.log(`[CONTROLLER] Processing callback [${callbackId}]`);
     
     // Parse callback data (support digipro format)
     const parsed = parseDigiproCallback(body);
     const { ref_id, success, status_code, response_data, error_message, raw_response, response_time } = parsed;
 
+    console.log('Parsed callback data:', {
+      ref_id,
+      success,
+      status: parsed.status,
+      status_code,
+      rc: response_data?.rc,
+      message: response_data?.message
+    });
+
     // Validasi required fields
     if (!ref_id) {
+      console.error('Callback rejected: ref_id is missing');
       return res.status(400).json({
         success: false,
         message: 'ref_id is required'
@@ -103,12 +119,16 @@ export const handleCallback = async (req, res) => {
 
     // Cek apakah transaction ada (dengan retry jika belum ada)
     // Retry beberapa kali karena transaction mungkin masih dalam proses save
+    // Optimasi: kurangi retry delay untuk response lebih cepat
     let transaction = await getTransactionByRefId(ref_id);
     let retryCount = 0;
-    const maxRetries = 5;
-    const retryDelay = 500; // ms
+    const maxRetries = 3; // Kurangi dari 5 ke 3
+    const retryDelay = 200; // Kurangi dari 500ms ke 200ms untuk response lebih cepat
+    
+    console.log(`Looking for transaction ref_id: ${ref_id}, found: ${transaction ? 'YES' : 'NO'}`);
     
     while (!transaction && retryCount < maxRetries) {
+      console.log(`Transaction ${ref_id} not found, retrying... (${retryCount + 1}/${maxRetries})`);
       await new Promise(resolve => setTimeout(resolve, retryDelay));
       transaction = await getTransactionByRefId(ref_id);
       retryCount++;
@@ -122,6 +142,8 @@ export const handleCallback = async (req, res) => {
         ref_id: ref_id
       });
     }
+    
+    console.log(`Transaction found: ref_id=${ref_id}, current_status=${transaction.status}, current_success=${transaction.success}`);
     
 
     // Verify signature jika ada secret key di env (untuk format langsung)
@@ -158,9 +180,34 @@ export const handleCallback = async (req, res) => {
       updateData.sn = response_data.sn;
     }
 
+    console.log(`[CONTROLLER] Updating transaction ${ref_id}:`, {
+      from: {
+        status: transaction.status,
+        success: transaction.success,
+        status_code: transaction.status_code
+      },
+      to: {
+        status: updateData.status,
+        success: updateData.success,
+        status_code: updateData.status_code
+      }
+    });
+
+    // Update transaction - HARUS dilakukan sebelum response
+    // Queue sudah di-handle di route level, jadi di sini langsung update
+    console.log(`[CONTROLLER] About to update transaction ${ref_id} [${callbackId}]`);
+    const updateStartTime = Date.now();
     const updateResult = await updateTransactionByRefId(ref_id, updateData);
+    const updateTime = Date.now() - updateStartTime;
+    
+    console.log(`[CONTROLLER] Update result for ${ref_id} [${callbackId}]:`, {
+      updated: updateResult.updated,
+      affectedRows: updateResult.affectedRows || 'N/A',
+      updateTime: `${updateTime}ms`
+    });
 
     if (!updateResult.updated) {
+      console.error(`[CONTROLLER] Failed to update transaction ${ref_id}`);
       return res.status(500).json({
         success: false,
         message: 'Failed to update transaction'
@@ -168,7 +215,9 @@ export const handleCallback = async (req, res) => {
     }
 
     // Save log untuk callback yang diterima
+    console.log(`[CONTROLLER] About to save callback log for ${ref_id} [${callbackId}]`);
     try {
+      const logStartTime = Date.now();
       await createLog({
         user_id: transaction.user_id,
         transaction_id: transaction.id,
@@ -187,15 +236,21 @@ export const handleCallback = async (req, res) => {
         error_message: error_message || null,
         execution_time: response_time || null
       });
+      const logTime = Date.now() - logStartTime;
+      console.log(`[CONTROLLER] Callback log saved for ${ref_id} [${callbackId}], time: ${logTime}ms`);
     } catch (logError) {
-      console.error('Error saving callback log:', logError);
+      console.error(`[CONTROLLER] Error saving callback log for ${ref_id} [${callbackId}]:`, logError);
       // Don't fail the callback if log save fails
     }
 
     // Update batch statistics jika ada batch_id
     if (transaction.batch_id) {
+      console.log(`[CONTROLLER] About to update batch stats for batch_id: ${transaction.batch_id}, ref_id: ${ref_id} [${callbackId}]`);
       try {
+        const batchStartTime = Date.now();
         await updateBatchStats(transaction.batch_id);
+        const batchTime = Date.now() - batchStartTime;
+        console.log(`[CONTROLLER] Batch stats updated for batch_id: ${transaction.batch_id}, ref_id: ${ref_id} [${callbackId}], time: ${batchTime}ms`);
         
         // Get updated batch untuk emit
         const { getBatches } = await import('../models/transactionModel.js');
@@ -210,24 +265,66 @@ export const handleCallback = async (req, res) => {
       }
     }
 
-    // Get updated transaction untuk emit
+    // Get updated transaction untuk emit (lakukan sebelum response)
+    console.log(`[CONTROLLER] About to get updated transaction for emit, ref_id: ${ref_id} [${callbackId}]`);
+    const emitStartTime = Date.now();
     const updatedTransaction = await getTransactionByRefId(ref_id);
+    const emitGetTime = Date.now() - emitStartTime;
+    
     if (updatedTransaction) {
+      console.log(`[CONTROLLER] Emitting transaction update for ${ref_id} [${callbackId}]:`, {
+        status: updatedTransaction.status,
+        success: updatedTransaction.success,
+        status_code: updatedTransaction.status_code,
+        getTime: `${emitGetTime}ms`
+      });
+      // Emit langsung (tidak perlu setImmediate karena sudah async)
+      const emitCallStart = Date.now();
       emitTransactionUpdate(updatedTransaction);
+      const emitCallTime = Date.now() - emitCallStart;
+      console.log(`[CONTROLLER] Emit call completed for ${ref_id} [${callbackId}], emit time: ${emitCallTime}ms`);
+    } else {
+      console.warn(`[CONTROLLER] Updated transaction ${ref_id} not found for emit [${callbackId}]`);
     }
 
-    res.json({
-      success: true,
-      message: 'Transaction updated successfully',
-      ref_id
-    });
+    const processingTime = Date.now() - startTime;
+    console.log(`=== CALLBACK PROCESSED SUCCESSFULLY [${callbackId}] ===`);
+    console.log(`ref_id: ${ref_id}, status: ${parsed.status}, success: ${success}`);
+    console.log(`Processing time: ${processingTime}ms`);
+    console.log('========================================\n');
+
+    // Response dikirim SETELAH semua operasi selesai
+    // Pastikan response hanya dikirim sekali dan selalu dikirim
+    if (res.headersSent) {
+      console.warn(`[CONTROLLER] Response already sent for ${ref_id} [${callbackId}]`);
+    } else {
+      try {
+        res.json({
+          success: true,
+          message: 'Transaction updated successfully',
+          ref_id
+        });
+        console.log(`[CONTROLLER] Response sent successfully for ${ref_id} [${callbackId}]`);
+      } catch (responseError) {
+        console.error(`[CONTROLLER] Error sending response for ${ref_id} [${callbackId}]:`, responseError);
+      }
+    }
   } catch (error) {
-    console.error('Callback error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    const processingTime = Date.now() - startTime;
+    console.error(`=== CALLBACK ERROR [${callbackId}] ===`);
+    console.error('Error:', error);
+    console.error('Stack:', error.stack);
+    console.error(`Processing time before error: ${processingTime}ms`);
+    console.error('========================================\n');
+    
+    // Pastikan response dikirim meskipun ada error
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
   }
 };
 

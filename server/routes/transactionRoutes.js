@@ -7,7 +7,8 @@ import {
   getStatsHandler,
   createBatchHandler,
   updateBatchHandler,
-  getBatchesHandler
+  getBatchesHandler,
+  checkStatusHandler
 } from '../controllers/transactionController.js';
 
 const router = express.Router();
@@ -21,10 +22,12 @@ router.get('/batches', getBatchesHandler);
 router.patch('/batches/:batch_id', updateBatchHandler);
 
 // Transaction operations
-router.post('/', saveTransactionHandler);
+// IMPORTANT: Specific routes harus didefinisikan sebelum generic routes
+router.post('/check-status', checkStatusHandler);
 router.post('/bulk', saveTransactionsHandler);
-router.get('/', getTransactionsHandler);
+router.post('/', saveTransactionHandler);
 router.get('/stats', getStatsHandler);
+router.get('/', getTransactionsHandler);
 
 export default router;
 

@@ -136,6 +136,7 @@ export async function getTransactions(filters = {}, pagination = {}) {
     if (filters.success !== undefined) params.append('success', filters.success);
     if (filters.customer_no) params.append('customer_no', filters.customer_no);
     if (filters.product_code) params.append('product_code', filters.product_code);
+    if (filters.ref_id) params.append('ref_id', filters.ref_id);
     if (filters.start_date) params.append('start_date', filters.start_date);
     if (filters.end_date) params.append('end_date', filters.end_date);
     

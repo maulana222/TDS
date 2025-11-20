@@ -36,22 +36,42 @@ export const saveSettingsHandler = async (req, res) => {
     const userId = req.user.id;
     const settings = req.body;
 
-    // Validasi required fields untuk Digiprosb
-    if (!settings.digiprosb_username || !settings.digiprosb_api_key || !settings.digiprosb_endpoint) {
-      return res.status(400).json({
-        success: false,
-        message: 'Username, API Key, dan API Endpoint harus diisi'
-      });
+    // Validasi required fields untuk Digiprosb (jika diisi)
+    if (settings.digiprosb_username || settings.digiprosb_api_key || settings.digiprosb_endpoint) {
+      if (!settings.digiprosb_username || !settings.digiprosb_api_key || !settings.digiprosb_endpoint) {
+        return res.status(400).json({
+          success: false,
+          message: 'Jika mengisi Digiprosb, Username, API Key, dan API Endpoint harus diisi semua'
+        });
+      }
+      // Validasi URL endpoint Digiprosb
+      try {
+        new URL(settings.digiprosb_endpoint);
+      } catch (e) {
+        return res.status(400).json({
+          success: false,
+          message: 'Digiprosb API Endpoint harus berupa URL yang valid'
+        });
+      }
     }
 
-    // Validasi URL endpoint
-    try {
-      new URL(settings.digiprosb_endpoint);
-    } catch (e) {
-      return res.status(400).json({
-        success: false,
-        message: 'API Endpoint harus berupa URL yang valid'
-      });
+    // Validasi required fields untuk Digiflazz (jika diisi)
+    if (settings.digiflazz_username || settings.digiflazz_api_key || settings.digiflazz_endpoint) {
+      if (!settings.digiflazz_username || !settings.digiflazz_api_key || !settings.digiflazz_endpoint) {
+        return res.status(400).json({
+          success: false,
+          message: 'Jika mengisi Digiflazz, Username, API Key, dan API Endpoint harus diisi semua'
+        });
+      }
+      // Validasi URL endpoint Digiflazz
+      try {
+        new URL(settings.digiflazz_endpoint);
+      } catch (e) {
+        return res.status(400).json({
+          success: false,
+          message: 'Digiflazz API Endpoint harus berupa URL yang valid'
+        });
+      }
     }
 
     await saveUserSettings(userId, settings);

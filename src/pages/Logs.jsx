@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { getLogs, getLogStats } from '../services/logApi';
+import { getLogs, getLogStats, deleteAllLogs } from '../services/logApi';
+import { isAdmin } from '../services/authService';
+import { FiTrash2 } from 'react-icons/fi';
 
 function Logs() {
   const [logs, setLogs] = useState([]);
@@ -20,6 +22,8 @@ function Logs() {
     end_date: ''
   });
   const [selectedLog, setSelectedLog] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const admin = isAdmin();
 
   useEffect(() => {
     loadLogs();
@@ -124,6 +128,39 @@ function Logs() {
 
   const getDirectionIcon = (direction) => {
     return direction === 'incoming' ? '⬇️' : '⬆️';
+  };
+
+  const handleDeleteAll = async () => {
+    const confirmMessage = admin 
+      ? 'Yakin ingin menghapus SEMUA log? Tindakan ini tidak dapat dibatalkan!'
+      : 'Yakin ingin menghapus semua log Anda? Tindakan ini tidak dapat dibatalkan!';
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      toast.loading('Menghapus log...', { id: 'delete-logs' });
+      
+      const response = await deleteAllLogs();
+      
+      if (response.success) {
+        toast.dismiss('delete-logs');
+        toast.success(`Berhasil menghapus ${response.deleted_count} log`);
+        setLogs([]);
+        setPagination(prev => ({ ...prev, total: 0, totalPages: 0 }));
+        loadStats();
+      } else {
+        throw new Error(response.message || 'Gagal menghapus log');
+      }
+    } catch (error) {
+      toast.dismiss('delete-logs');
+      console.error('Error deleting logs:', error);
+      toast.error(error.message || 'Gagal menghapus log');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -280,13 +317,25 @@ function Logs() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-800">Log</h2>
-          <button
-            onClick={loadLogs}
-            disabled={loading}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 text-sm disabled:opacity-50"
-          >
-            {loading ? '⏳ Memuat...' : '🔄 Muat Ulang'}
-          </button>
+          <div className="flex items-center gap-2">
+            {admin && pagination.total > 0 && (
+              <button
+                onClick={handleDeleteAll}
+                disabled={deleting || loading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all duration-200 text-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                <FiTrash2 className="w-4 h-4" />
+                {deleting ? 'Menghapus...' : 'Hapus Semua Log'}
+              </button>
+            )}
+            <button
+              onClick={loadLogs}
+              disabled={loading}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all duration-200 text-sm disabled:opacity-50"
+            >
+              {loading ? '⏳ Memuat...' : '🔄 Muat Ulang'}
+            </button>
+          </div>
         </div>
 
         {/* Pagination Info */}

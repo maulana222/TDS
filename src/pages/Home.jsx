@@ -351,7 +351,7 @@ function Home() {
   const handleManualGenerate = (manualTransactions) => {
     setTransactions(manualTransactions);
     setProgress(null);
-    toast.success(`${manualTransactions.length} transaksi siap diproses`);
+    // Hapus toast - user langsung klik "Mulai Request"
   };
 
   const handleConfirmPreview = () => {
@@ -361,7 +361,7 @@ function Home() {
       setProgress(null);
       setShowPreview(false);
       setPreviewData(null);
-      toast.success(`${previewData.totalRows} transaksi siap diproses`);
+      // Hapus toast "siap diproses" - user langsung klik "Mulai Request"
     }
   };
 
@@ -373,42 +373,39 @@ function Home() {
   const handleStart = async (resume = false) => {
     let transactionsToProcess = [];
     
-    // Jika manual input dan belum ada transactions, generate dulu
-    if (!resume && inputMode === 'manual' && transactions.length === 0) {
-      // Get data dari ManualInput component
-      const manualInputForm = document.querySelector('#manualInputForm');
-      if (manualInputForm) {
-        const productCode = document.querySelector('#productCode')?.value?.trim();
-        const customerNumber = document.querySelector('#customerNumber')?.value?.trim();
-        const totalRequests = parseInt(document.querySelector('#totalRequests')?.value) || 1;
-        
-        if (!productCode || !customerNumber) {
-          toast.error('Product Code dan Customer Number harus diisi');
-          return;
-        }
-        
-        if (totalRequests < 1 || totalRequests > 1000) {
-          toast.error('Jumlah request harus antara 1-1000');
-          return;
-        }
-        
-        // Generate transactions
-        const manualTransactions = Array.from({ length: totalRequests }, (_, index) => ({
-          customer_no: customerNumber,
-          product_code: productCode,
-          row_number: index + 1
-        }));
-        
-        setTransactions(manualTransactions);
-        // Langsung gunakan transactions yang baru di-generate tanpa toast "mempersiapkan"
-        transactionsToProcess = manualTransactions;
-      } else {
-        toast.error('Silakan isi data transaksi terlebih dahulu');
+    // Untuk manual input, SELALU ambil data terbaru dari form (tidak peduli state transactions)
+    if (!resume && inputMode === 'manual') {
+      // Get data terbaru dari ManualInput component
+      const productCode = document.querySelector('#productCode')?.value?.trim();
+      const customerNumber = document.querySelector('#customerNumber')?.value?.trim();
+      const totalRequests = parseInt(document.querySelector('#totalRequests')?.value) || 1;
+      
+      if (!productCode || !customerNumber) {
+        toast.error('Product Code dan Customer Number harus diisi');
         return;
       }
+      
+      if (totalRequests < 1 || totalRequests > 1000) {
+        toast.error('Jumlah request harus antara 1-1000');
+        return;
+      }
+      
+      // Generate transactions dari data form terbaru
+      const manualTransactions = Array.from({ length: totalRequests }, (_, index) => ({
+        customer_no: customerNumber,
+        product_code: productCode,
+        row_number: index + 1
+      }));
+      
+      // Update state dengan transactions baru
+      setTransactions(manualTransactions);
+      transactionsToProcess = manualTransactions;
+    } else if (resume) {
+      // Jika resume, gunakan remaining transactions
+      transactionsToProcess = remainingTransactions;
     } else {
-      // Jika resume, gunakan remaining transactions, jika tidak gunakan semua transactions
-      transactionsToProcess = resume ? remainingTransactions : transactions;
+      // Untuk Excel mode, gunakan transactions yang sudah ada
+      transactionsToProcess = transactions;
     }
     
     if (transactionsToProcess.length === 0) {
@@ -429,10 +426,10 @@ function Home() {
       setCurrentBatchId(batchId);
       // Jangan reset results, biarkan data dari database tetap ada
       // Data baru akan muncul di atas karena di-sort berdasarkan timestamp
-      setProgress({ current: 0, total: transactions.length, progress: 0 });
+      setProgress({ current: 0, total: transactionsToProcess.length, progress: 0 });
       
       // Create batch di database (async, tidak blocking proses)
-      createBatch(batchId, transactions.length, config).catch(error => {
+      createBatch(batchId, transactionsToProcess.length, config).catch(error => {
         console.error('Error creating batch:', error);
         // Continue even if batch creation fails
       });
@@ -443,8 +440,8 @@ function Home() {
       const processedCount = results.length;
       setProgress({ 
         current: processedCount, 
-        total: transactions.length, 
-        progress: (processedCount / transactions.length) * 100 
+        total: transactionsToProcess.length + processedCount, 
+        progress: (processedCount / (transactionsToProcess.length + processedCount)) * 100 
       });
     }
 
@@ -464,8 +461,8 @@ function Home() {
           // Update progress dengan offset jika resume
           const currentProgress = {
             current: startIndex + progressData.current,
-            total: transactions.length,
-            progress: ((startIndex + progressData.current) / transactions.length) * 100,
+            total: transactionsToProcess.length + startIndex,
+            progress: ((startIndex + progressData.current) / (transactionsToProcess.length + startIndex)) * 100,
             result: progressData.result
           };
           setProgress(currentProgress);
@@ -618,16 +615,16 @@ function Home() {
       // Notifikasi selesai
       if (cancelTokenRef.current.cancelled) {
         const processedCount = transactionResults.length;
-        const remainingCount = transactions.length - processedCount;
+        const remainingCount = transactionsToProcess.length - processedCount;
         toast.error(
-          `Proses dihentikan. ${processedCount} dari ${transactions.length} transaksi sudah diproses. ${remainingCount} transaksi tersisa.`,
+          `Proses dihentikan. ${processedCount} dari ${transactionsToProcess.length} transaksi sudah diproses. ${remainingCount} transaksi tersisa.`,
           { duration: 5000 }
         );
       } else {
         const successCount = transactionResults.filter(r => r.success).length;
         const failedCount = transactionResults.filter(r => !r.success).length;
         toast.success(
-          `Selesai! ${successCount} berhasil, ${failedCount} gagal dari ${transactions.length} transaksi`,
+          `Selesai! ${successCount} berhasil, ${failedCount} gagal dari ${transactionsToProcess.length} transaksi`,
           { duration: 5000 }
         );
       }
@@ -850,44 +847,10 @@ Created At: ${transaction.timestamp ? new Date(transaction.timestamp).toLocaleSt
                     disabled={isProcessing}
                   />
                 </form>
-                {transactions.length > 0 && (
-                  <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-900 font-semibold">{transactions.length} transaksi</p>
-                        <p className="text-gray-600 text-sm">Siap diproses</p>
-                      </div>
-                      <button
-                        onClick={handleClearFile}
-                        className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded transition-colors"
-                        disabled={isProcessing}
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
-                )}
               </>
             ) : (
               <>
                 <ExcelUpload onFileUpload={handleFileUpload} />
-                {transactions.length > 0 && (
-                  <div className="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-gray-900 font-semibold">{transactions.length} transaksi</p>
-                        <p className="text-gray-600 text-sm">Siap diproses</p>
-                      </div>
-                      <button
-                        onClick={handleClearFile}
-                        className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 rounded transition-colors"
-                        disabled={isProcessing}
-                      >
-                        Hapus
-                      </button>
-                    </div>
-                  </div>
-                )}
               </>
             )}
 

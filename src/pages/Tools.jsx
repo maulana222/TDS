@@ -1,14 +1,11 @@
 import { 
   FiActivity, 
-  FiClock, 
-  FiSettings, 
-  FiFileText, 
-  FiLayout, 
-  FiUser,
-  FiTrendingUp,
-  FiBarChart2,
-  FiGrid,
-  FiMessageSquare
+  FiMessageSquare,
+  FiRefreshCw,
+  FiTrash2,
+  FiCopy,
+  FiSearch,
+  FiTrendingUp
 } from 'react-icons/fi';
 import { isAdmin } from '../services/authService';
 
@@ -19,7 +16,7 @@ function Tools({ setCurrentPage }) {
     {
       id: 'transaction-request',
       title: 'Transaction Request Tool',
-      description: 'Upload Excel dan lakukan request transaksi ke Digiprosb secara batch',
+      description: 'Upload Excel atau input manual untuk melakukan request transaksi ke Digiswitch secara batch',
       icon: FiActivity,
       color: 'from-blue-500 to-blue-600',
       iconColor: 'text-blue-600',
@@ -28,65 +25,54 @@ function Tools({ setCurrentPage }) {
       page: 'transaction-request'
     },
     {
-      id: 'dashboard',
-      title: 'Dashboard & Analytics',
-      description: 'Lihat statistik real-time, grafik trend, dan analisis performa transaksi',
-      icon: FiBarChart2,
-      color: 'from-purple-500 to-purple-600',
-      iconColor: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-      borderColor: 'border-purple-200',
-      page: 'dashboard'
-    },
-    {
-      id: 'history',
-      title: 'Transaction History',
-      description: 'Lihat dan kelola riwayat transaksi sebelumnya dengan filter dan pencarian',
-      icon: FiClock,
-      color: 'from-orange-500 to-orange-600',
-      iconColor: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      borderColor: 'border-orange-200',
-      page: 'history'
-    },
-    {
-      id: 'logs',
-      title: 'Transaction Logs',
-      description: 'Monitor log callback, request/response, dan error untuk debugging',
-      icon: FiFileText,
+      id: 'bulk-retry',
+      title: 'Bulk Retry Tool',
+      description: 'Retry transaksi yang gagal secara batch dengan konfigurasi yang sama',
+      icon: FiRefreshCw,
       color: 'from-green-500 to-green-600',
       iconColor: 'text-green-600',
       bgColor: 'bg-green-50',
       borderColor: 'border-green-200',
-      page: 'logs'
+      page: 'bulk-retry'
     },
     {
-      id: 'settings',
-      title: 'Settings',
-      description: 'Konfigurasi API key, endpoint, delay, dan pengaturan lainnya',
-      icon: FiSettings,
-      color: 'from-indigo-500 to-indigo-600',
-      iconColor: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-      borderColor: 'border-indigo-200',
-      page: 'settings'
+      id: 'bulk-delete',
+      title: 'Bulk Delete Tool',
+      description: 'Hapus transaksi dalam jumlah besar berdasarkan filter tanggal, status, atau kriteria lainnya',
+      icon: FiTrash2,
+      color: 'from-red-500 to-red-600',
+      iconColor: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200',
+      page: 'bulk-delete'
     },
     {
-      id: 'profile',
-      title: 'Profile',
-      description: 'Informasi akun dan statistik transaksi user',
-      icon: FiUser,
-      color: 'from-pink-500 to-pink-600',
-      iconColor: 'text-pink-600',
-      bgColor: 'bg-pink-50',
-      borderColor: 'border-pink-200',
-      page: 'profile'
+      id: 'duplicate-checker',
+      title: 'Duplicate Checker Tool',
+      description: 'Cek dan hapus transaksi duplikat berdasarkan customer number, product code, atau ref_id',
+      icon: FiCopy,
+      color: 'from-orange-500 to-orange-600',
+      iconColor: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+      borderColor: 'border-orange-200',
+      page: 'duplicate-checker'
+    },
+    {
+      id: 'transaction-finder',
+      title: 'Transaction Finder Tool',
+      description: 'Cari transaksi berdasarkan berbagai kriteria dengan filter advanced dan export hasil',
+      icon: FiSearch,
+      color: 'from-purple-500 to-purple-600',
+      iconColor: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      page: 'transaction-finder'
     },
     // Only show Telegram Tools for admin
     ...(admin ? [{
       id: 'telegram',
       title: 'Telegram Tools',
-      description: 'Kirim pesan ke Telegram menggunakan Bot API',
+      description: 'Kirim pesan notifikasi ke Telegram menggunakan Bot API untuk update transaksi',
       icon: FiMessageSquare,
       color: 'from-cyan-500 to-cyan-600',
       iconColor: 'text-cyan-600',

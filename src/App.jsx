@@ -15,6 +15,8 @@ import Profile from './pages/Profile';
 import Telegram from './pages/Telegram';
 import MemberManagement from './pages/MemberManagement';
 import TransactionManagement from './pages/TransactionManagement';
+import Connections from './pages/Connections';
+import EditConnection from './pages/EditConnection';
 import { isAuthenticated, logout, verifyToken, getCurrentUser, getUserRoles, isAdmin } from './services/authService';
 import { initSocket, disconnectSocket } from './services/socketService';
 
@@ -239,6 +241,8 @@ function AppContent() {
               <Route path="/transaction-request" element={<Home />} />
               <Route path="/history" element={<History />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/connections" element={<Connections />} />
+              <Route path="/connections/edit/:connectionId" element={<EditConnection />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/profile" element={<Profile />} />
               <Route 

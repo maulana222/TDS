@@ -1,4 +1,4 @@
-import { getLogs, getLogStats, getLogById, saveLog } from '../models/logModel.js';
+import { getLogs, getLogStats, getLogById, saveLog, deleteAllLogs, deleteAllLogsAdmin } from '../models/logModel.js';
 
 /**
  * Get logs dengan filter dan pagination
@@ -150,6 +150,38 @@ export const createLog = async (logData) => {
     console.error('Error saving log:', error);
     // Don't throw error, just log it
     return null;
+  }
+};
+
+/**
+ * Delete all logs (user's own logs, or all logs if admin)
+ */
+export const deleteAllLogsHandler = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const isAdmin = req.user.roles && req.user.roles.some(role => role.name === 'admin');
+    
+    let deletedCount;
+    if (isAdmin) {
+      // Admin bisa hapus semua log
+      deletedCount = await deleteAllLogsAdmin();
+    } else {
+      // User biasa hanya bisa hapus log miliknya sendiri
+      deletedCount = await deleteAllLogs(userId);
+    }
+
+    res.json({
+      success: true,
+      message: `Berhasil menghapus ${deletedCount} log`,
+      deleted_count: deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menghapus log',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
