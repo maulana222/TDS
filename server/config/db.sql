@@ -35,7 +35,7 @@ CREATE TABLE transactions (
   response_data JSON DEFAULT NULL COMMENT 'Data response dari API',
   error_message TEXT DEFAULT NULL COMMENT 'Error message jika gagal',
   raw_response TEXT DEFAULT NULL COMMENT 'Raw response dari API',
-  row_number INT DEFAULT NULL COMMENT 'Nomor baris dari Excel',
+  `row_number` INT DEFAULT NULL COMMENT 'Nomor baris dari Excel',
   batch_id VARCHAR(100) DEFAULT NULL COMMENT 'ID untuk grouping transaksi dalam satu batch',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_user_id (user_id),
