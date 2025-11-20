@@ -8,9 +8,32 @@ let io = null;
 export const initSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL 
-        ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-        : ['http://localhost:8888', 'http://localhost:3000'],
+      origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = process.env.FRONTEND_URL 
+          ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+          : ['http://localhost:8888', 'http://localhost:3000'];
+        
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // In production, allow if origin matches domain
+        if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+          const domain = process.env.FRONTEND_URL.split(',')[0].trim().replace(/https?:\/\//, '').split('/')[0];
+          if (origin.includes(domain)) {
+            return callback(null, true);
+          }
+        }
+        
+        // Development: allow localhost
+        if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+          return callback(null, true);
+        }
+        
+        callback(new Error('Not allowed by CORS'));
+      },
       methods: ['GET', 'POST'],
       credentials: true
     }

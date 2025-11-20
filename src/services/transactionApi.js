@@ -4,9 +4,9 @@
 
 import { getSettings } from './settingsService';
 
+// Gunakan relative path untuk production (via Nginx proxy), atau environment variable
 function getBackendUrl() {
-  const settings = getSettings();
-  return settings.backendUrl || import.meta.env.VITE_API_URL || 'http://localhost:3737';
+  return import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3737');
 }
 
 /**

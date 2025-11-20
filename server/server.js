@@ -45,31 +45,42 @@ app.use(helmet({
 }));
 
 // CORS configuration
-// Support multiple origins untuk development dan production
-const allowedOrigins = process.env.FRONTEND_URL 
-  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-  : ['http://localhost:8888', 'http://localhost:3000'];
+// Build allowed origins list
+const allowedOrigins = [];
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(...process.env.FRONTEND_URL.split(',').map(url => url.trim()));
+}
+// Add default development origins
+allowedOrigins.push('http://localhost:8888', 'http://localhost:3000');
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.indexOf(origin) !== -1 || 
-        process.env.NODE_ENV === 'development' ||
-        origin?.includes('localhost')) {
-      callback(null, true);
-    } else {
-      // For production, allow if origin matches domain pattern
-      if (process.env.NODE_ENV === 'production' && origin) {
-        const allowedPattern = process.env.FRONTEND_URL?.replace(/https?:\/\//, '').split('/')[0];
-        if (allowedPattern && origin.includes(allowedPattern)) {
-          return callback(null, true);
-        }
-      }
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (mobile apps, Postman, curl, etc)
+    if (!origin) {
+      return callback(null, true);
     }
+    
+    // Check exact match
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // In production, allow if origin matches domain pattern from FRONTEND_URL
+    if (process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL) {
+      const frontendUrl = process.env.FRONTEND_URL.split(',')[0].trim();
+      const domain = frontendUrl.replace(/https?:\/\//, '').split('/')[0];
+      if (origin.includes(domain)) {
+        return callback(null, true);
+      }
+    }
+    
+    // Development: always allow localhost
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    console.warn(`[CORS] Blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+    callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
