@@ -78,13 +78,3 @@ export async function getStats(filters = {}) {
   }
 }
 
-
-
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    console.error('Error getting stats:', error);
-    throw error;
-  }
-}
-

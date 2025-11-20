@@ -113,17 +113,3 @@ export function clearSettingsCache() {
 }
 
 
-
-    throw error;
-  }
-}
-
-/**
- * Clear settings cache (helper untuk clear cache di settingsService)
- */
-export function clearSettingsCache() {
-  // This is just a placeholder, actual cache clearing is in settingsService
-  // But we export it here for convenience
-}
-
-
