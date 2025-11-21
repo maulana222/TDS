@@ -65,8 +65,10 @@ export const getLogs = async (userId, filters = {}, pagination = {}) => {
     end_date = null
   } = filters;
 
-  const { page = 1, limit = 50 } = pagination;
-  const offset = (page - 1) * limit;
+  // Pastikan page dan limit adalah integer
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 50;
+  const offset = (pageNum - 1) * limitNum;
 
   let query = `
     SELECT 
@@ -105,8 +107,12 @@ export const getLogs = async (userId, filters = {}, pagination = {}) => {
     params.push(end_date);
   }
 
-  query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-  params.push(limit, offset);
+  // Gunakan template literal untuk LIMIT dan OFFSET (beberapa versi MySQL tidak support prepared statement untuk LIMIT)
+  // Sanitize untuk mencegah SQL injection
+  const safeLimit = Math.max(1, Math.min(limitNum, 1000)); // Min 1, Max 1000
+  const safeOffset = Math.max(0, offset); // Min 0
+  
+  query += ` ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
   const [rows] = await pool.execute(query, params);
 

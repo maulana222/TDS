@@ -43,16 +43,15 @@ export async function doTransaction({ productCode, customerNo, refId, signature 
   const startTime = Date.now();
   
   try {
-    // Gunakan proxy di development, atau langsung API di production
-    const apiUrl = import.meta.env.DEV 
-      ? `/api/v1/user/api/transaction` 
-      : apiConfig.endpoint;
+    // Selalu gunakan proxy melalui backend untuk menghindari CORS issue
+    // Proxy endpoint: /api/proxy/transaction
+    const apiUrl = '/api/proxy/transaction';
     
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify(payload),
-      mode: 'cors'
+      credentials: 'include' // Include cookies untuk authentication
     });
     
     const responseTime = Date.now() - startTime;

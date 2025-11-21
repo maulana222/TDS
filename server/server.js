@@ -15,6 +15,7 @@ import deleteRoutes from './routes/deleteRoutes.js';
 import telegramRoutes from './routes/telegramRoutes.js';
 import roleRoutes from './routes/roleRoutes.js';
 import connectionRoutes from './routes/connectionRoutes.js';
+import proxyRoutes from './routes/proxyRoutes.js';
 import pool from './config/database.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { initSocket } from './socket.js';
@@ -144,6 +145,9 @@ app.use('/api/callback', (req, res, next) => {
   console.log(`[CALLBACK ROUTE] ${req.method} ${req.path} - No rate limiting applied`);
   next();
 }, callbackRoutes);
+
+// Proxy route - TIDAK ada rate limiting (untuk request transaksi yang banyak)
+app.use('/api/proxy', proxyRoutes);
 
 // General rate limiting untuk semua route API lainnya
 app.use('/api', apiRateLimiter);
