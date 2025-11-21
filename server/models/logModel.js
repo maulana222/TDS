@@ -65,6 +65,7 @@ export const getLogs = async (userId, filters = {}, pagination = {}) => {
     end_date = null
   } = filters;
 
+  const { page = 1, limit = 50 } = pagination;
   // Pastikan page dan limit adalah integer
   const pageNum = parseInt(page, 10) || 1;
   const limitNum = parseInt(limit, 10) || 50;

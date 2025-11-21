@@ -13,12 +13,22 @@ router.use(authenticateToken);
  */
 router.post('/transaction', async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+    
+    console.log('[PROXY] Received transaction request from user:', userId);
     
     // Get user settings untuk mendapatkan endpoint dan credentials
     const settings = await getUserSettings(userId);
     
     if (!settings.digiprosb_username || !settings.digiprosb_api_key) {
+      console.error('[PROXY] Missing credentials for user:', userId);
       return res.status(400).json({
         success: false,
         message: 'Username dan API Key belum dikonfigurasi'
@@ -26,6 +36,9 @@ router.post('/transaction', async (req, res) => {
     }
 
     const endpoint = settings.digiprosb_endpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction';
+    
+    console.log('[PROXY] Forwarding to endpoint:', endpoint);
+    console.log('[PROXY] Request body:', { ...req.body, sign: '***' }); // Hide signature
     
     // Forward request ke Digiprosb API
     const response = await fetch(endpoint, {

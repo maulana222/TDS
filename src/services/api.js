@@ -4,6 +4,7 @@
 
 import { getSettings } from './settingsService';
 import { saveTransactionLog } from './logApi.js';
+import { getAuthToken, getBackendUrl } from './authService.js';
 
 // Get settings untuk API configuration (async)
 async function getApiConfig() {
@@ -45,11 +46,25 @@ export async function doTransaction({ productCode, customerNo, refId, signature 
   try {
     // Selalu gunakan proxy melalui backend untuk menghindari CORS issue
     // Proxy endpoint: /api/proxy/transaction
-    const apiUrl = '/api/proxy/transaction';
+    // JANGAN gunakan apiConfig.endpoint langsung karena akan menyebabkan CORS error
+    const backendUrl = getBackendUrl();
+    const apiUrl = `${backendUrl}/api/proxy/transaction`;
+    const token = getAuthToken();
+    
+    if (!token) {
+      throw new Error('Authentication token not found. Please login again.');
+    }
+    
+    console.log('[API] Using proxy endpoint:', apiUrl);
+    console.log('[API] Payload:', { ...payload, sign: '***' }); // Hide signature
+    console.log('[API] Token present:', !!token);
     
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: headers,
+      headers: {
+        ...headers,
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(payload),
       credentials: 'include' // Include cookies untuk authentication
     });

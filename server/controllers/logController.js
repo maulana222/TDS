@@ -20,8 +20,8 @@ export const getLogsHandler = async (req, res) => {
       log_type: log_type || null,
       direction: direction || null,
       ref_id: ref_id || null,
-      startDate: start_date || null,
-      endDate: end_date || null
+      start_date: start_date || null,
+      end_date: end_date || null
     };
 
     const pagination = {
