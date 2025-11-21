@@ -61,6 +61,8 @@ if (process.env.FRONTEND_URL) {
 }
 // Add default development origins
 allowedOrigins.push('http://localhost:8888', 'http://localhost:3000');
+// Add production frontend explicitly
+allowedOrigins.push('https://tds.pix-ly.app');
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -191,3 +193,4 @@ server.listen(PORT, HOST, () => {
   console.log(`   - GET /api/logs/stats`);
   console.log(`   - GET /api/logs/:id`);
 });
+

@@ -1,6 +1,6 @@
 export default {
   apps: [{
-    name: 'tds-backend',
+    name: 'tds',
     script: 'server/server.js',
     instances: 1,
     exec_mode: 'fork',
@@ -8,7 +8,7 @@ export default {
     env: {
       NODE_ENV: 'production',
       PORT: 3737,
-      // FRONTEND_URL akan diambil dari .env file
+      FRONTEND_URL: 'https://tds.pix-ly.app',
     },
     error_file: './logs/pm2-error.log',
     out_file: './logs/pm2-out.log',
