@@ -26,7 +26,7 @@ export const saveTransaction = async (transactionData, userId, batchId = null) =
     `INSERT INTO transactions (
       user_id, customer_no, customer_no_used, product_code, ref_id, signature,
       status_code, success, status, response_time, response_data, error_message, raw_response,
-      row_number, batch_id, sn
+      \`row_number\`, batch_id, sn
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       userId,
@@ -105,7 +105,7 @@ export const saveTransactions = async (transactions, userId, batchId = null) => 
     INSERT INTO transactions (
       user_id, customer_no, customer_no_used, product_code, ref_id, signature,
       status_code, success, status, response_time, response_data, error_message, raw_response,
-      row_number, batch_id, sn
+      \`row_number\`, batch_id, sn
     ) VALUES ${placeholders.join(', ')}
   `;
 
