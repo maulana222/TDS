@@ -190,9 +190,13 @@ export const getTopProducts = async (userId, limit = 10, filters = {}) => {
     LIMIT ?
   `;
 
-  params.push(limit);
+  // Pastikan limit adalah integer
+  const limitNum = parseInt(limit, 10) || 10;
+  params.push(limitNum);
 
   try {
+    // Debug logging
+    console.log('[getTopProducts] Query params:', params);
     const [rows] = await pool.execute(query, params);
     return rows.map(row => {
       // Safely parse revenue

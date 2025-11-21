@@ -128,7 +128,10 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
   } = filters;
 
   const { page = 1, limit = 50 } = pagination;
-  const offset = (page - 1) * limit;
+  // Pastikan page dan limit adalah integer
+  const pageNum = parseInt(page, 10) || 1;
+  const limitNum = parseInt(limit, 10) || 50;
+  const offset = (pageNum - 1) * limitNum;
 
   let query = `
     SELECT 
@@ -178,8 +181,10 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
   }
 
   query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-  params.push(limit, offset);
+  params.push(limitNum, offset);
 
+  // Debug logging
+  console.log('[getTransactions] Query params:', params);
   const [rows] = await pool.execute(query, params);
 
   // Parse JSON response_data
