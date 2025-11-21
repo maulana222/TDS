@@ -184,19 +184,19 @@ export const getTopProducts = async (userId, limit = 10, filters = {}) => {
     params.push(end_date);
   }
 
+  // Pastikan limit adalah integer dan aman (sanitize untuk mencegah SQL injection)
+  const limitNum = Math.max(1, Math.min(parseInt(limit, 10) || 10, 100)); // Min 1, Max 100
+  
   query += `
     GROUP BY product_code
     ORDER BY transaction_count DESC
-    LIMIT ?
+    LIMIT ${limitNum}
   `;
-
-  // Pastikan limit adalah integer
-  const limitNum = parseInt(limit, 10) || 10;
-  params.push(limitNum);
 
   try {
     // Debug logging
     console.log('[getTopProducts] Query params:', params);
+    console.log('[getTopProducts] Limit:', limitNum);
     const [rows] = await pool.execute(query, params);
     return rows.map(row => {
       // Safely parse revenue

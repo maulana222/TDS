@@ -180,11 +180,16 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
     params.push(endDate);
   }
 
-  query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-  params.push(limitNum, offset);
+  // Gunakan template literal untuk LIMIT dan OFFSET (beberapa versi MySQL tidak support prepared statement untuk LIMIT)
+  // Sanitize untuk mencegah SQL injection
+  const safeLimit = Math.max(1, Math.min(limitNum, 1000)); // Min 1, Max 1000
+  const safeOffset = Math.max(0, offset); // Min 0
+  
+  query += ` ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
   // Debug logging
   console.log('[getTransactions] Query params:', params);
+  console.log('[getTransactions] Limit:', safeLimit, 'Offset:', safeOffset);
   const [rows] = await pool.execute(query, params);
 
   // Parse JSON response_data
