@@ -105,28 +105,3 @@ export const emitBatchUpdate = (batch) => {
   }
 };
 
-
-  }
-  
-  // Juga broadcast ke semua connected clients (untuk memastikan update terlihat)
-  // Ini berguna jika ada masalah dengan room joining
-  io.emit('transaction-updated', transaction);
-};
-
-/**
- * Emit batch update
- */
-export const emitBatchUpdate = (batch) => {
-  if (!io) return;
-  
-  // Emit ke room batch_id
-  if (batch.batch_id) {
-    io.to(`batch:${batch.batch_id}`).emit('batch-updated', batch);
-  }
-  
-  // Emit ke room user_id
-  if (batch.user_id) {
-    io.to(`user:${batch.user_id}`).emit('batch-updated', batch);
-  }
-};
-
