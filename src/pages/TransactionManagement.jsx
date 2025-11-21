@@ -253,7 +253,7 @@ function TransactionManagement() {
       toast.loading(`Mengecek status ${count} transaksi...`, { id: 'check-status' });
       
       // Call backend API untuk check status
-      const API_URL = import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api-tds.pix-ly.app';
       const token = localStorage.getItem('auth_token');
       
       const response = await fetch(`${API_URL}/api/transactions/check-status`, {

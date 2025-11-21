@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
-// Gunakan environment variable atau IP VPS
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
+// Gunakan environment variable atau subdomain backend
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://api-tds.pix-ly.app';
 
 let socket = null;
 
@@ -130,5 +130,4 @@ export const leaveBatchRoom = (batchId) => {
     socket.emit('leave-room', `batch:${batchId}`);
   }
 };
-
 

@@ -160,6 +160,7 @@ curl http://tds.pix-ly.app/health
 - [ ] Domain sudah pointing ke IP server
 
 
+
 ## Error: 500 Internal Server Error
 
 ### 1. Cek Error Log Nginx

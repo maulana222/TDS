@@ -1,5 +1,5 @@
-// Gunakan environment variable atau IP VPS
-const API_URL = import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
+// Gunakan environment variable atau subdomain backend
+const API_URL = import.meta.env.VITE_API_URL || 'https://api-tds.pix-ly.app';
 
 /**
  * Get backend URL

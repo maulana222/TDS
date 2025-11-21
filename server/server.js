@@ -191,4 +191,3 @@ server.listen(PORT, HOST, () => {
   console.log(`   - GET /api/logs/stats`);
   console.log(`   - GET /api/logs/:id`);
 });
-

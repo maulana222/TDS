@@ -32,7 +32,7 @@ export async function getSettings() {
       refreshInterval: apiSettings.refresh_interval || 30,
       showNotifications: apiSettings.show_notifications !== undefined ? apiSettings.show_notifications : true,
       exportFormat: apiSettings.export_format || 'excel',
-      backendUrl: import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737',
+      backendUrl: import.meta.env.VITE_API_URL || 'https://api-tds.pix-ly.app',
       digiprosbUsername: apiSettings.digiprosb_username || '',
       digiprosbApiKey: apiSettings.digiprosb_api_key || '',
       digiprosbEndpoint: apiSettings.digiprosb_endpoint || 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'
@@ -54,7 +54,7 @@ export async function getSettings() {
       refreshInterval: 30,
       showNotifications: true,
       exportFormat: 'excel',
-      backendUrl: import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737',
+      backendUrl: import.meta.env.VITE_API_URL || 'https://api-tds.pix-ly.app',
       digiprosbUsername: '',
       digiprosbApiKey: '',
       digiprosbEndpoint: 'https://digiprosb.api.digiswitch.id/v1/user/api/transaction'

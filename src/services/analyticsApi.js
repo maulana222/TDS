@@ -4,9 +4,9 @@
 
 import { getSettings } from './settingsService';
 
-// Gunakan environment variable atau IP VPS
+// Gunakan environment variable atau subdomain backend
 function getBackendUrl() {
-  return import.meta.env.VITE_API_URL || 'http://202.155.94.175:3737';
+  return import.meta.env.VITE_API_URL || 'https://api-tds.pix-ly.app';
 }
 
 const API_URL = getBackendUrl();
