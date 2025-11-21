@@ -134,7 +134,7 @@ export const getTransactions = async (userId, filters = {}, pagination = {}) => 
     SELECT 
       id, customer_no, customer_no_used, product_code, ref_id,
       status_code, success, status, response_time, response_data, error_message,
-      row_number, batch_id, created_at, sn
+      \`row_number\`, batch_id, created_at, sn
     FROM transactions
     WHERE user_id = ?
   `;
