@@ -35,6 +35,10 @@ const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 3737;
 
+// Trust proxy - penting untuk aplikasi di belakang reverse proxy (Nginx)
+// Ini memungkinkan Express membaca X-Forwarded-For header dengan benar
+app.set('trust proxy', true);
+
 // Initialize Socket.IO
 initSocket(server);
 
