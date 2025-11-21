@@ -14,6 +14,10 @@ export const loginRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true, // Hanya hitung request yang gagal
+  // Validasi trust proxy: hanya peringatan, tidak memblokir
+  validate: {
+    trustProxy: false, // Nonaktifkan validasi trust proxy (kita sudah set dengan benar)
+  },
 });
 
 /**
@@ -29,6 +33,11 @@ export const apiRateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Validasi trust proxy: hanya peringatan, tidak memblokir
+  // Karena kita sudah set trust proxy ke 1 (hanya 1 hop), ini aman
+  validate: {
+    trustProxy: false, // Nonaktifkan validasi trust proxy (kita sudah set dengan benar)
+  },
   skip: (req) => {
     // Skip rate limiting untuk:
     // 1. Callback route (dipanggil dari external API)
