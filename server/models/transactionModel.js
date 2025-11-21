@@ -22,6 +22,20 @@ export const saveTransaction = async (transactionData, userId, batchId = null) =
   // Extract sn from response data if available
   const sn = data?.sn || null;
 
+  // Parse status_code - harus integer (HTTP status code)
+  // Jika status adalah string, gunakan null untuk status_code
+  let statusCode = null;
+  if (transactionData.statusCode !== undefined) {
+    statusCode = parseInt(transactionData.statusCode, 10) || null;
+  } else if (typeof status === 'number') {
+    statusCode = status;
+  }
+  
+  // Parse status string (Pending, Sukses, Gagal)
+  const statusString = typeof transactionData.status === 'string' 
+    ? transactionData.status 
+    : (transactionData.status || null);
+
   const [result] = await pool.execute(
     `INSERT INTO transactions (
       user_id, customer_no, customer_no_used, product_code, ref_id, signature,
@@ -35,9 +49,9 @@ export const saveTransaction = async (transactionData, userId, batchId = null) =
       product_code,
       ref_id,
       signature || '',
-      status || null, // status_code (HTTP status)
+      statusCode, // status_code (HTTP status) - harus integer atau null
       success ? 1 : 0,
-      transactionData.status || null, // status string (Pending, Sukses, Gagal)
+      statusString, // status string (Pending, Sukses, Gagal)
       responseTime || null,
       data ? JSON.stringify(data) : null,
       error || null,
@@ -79,6 +93,20 @@ export const saveTransactions = async (transactions, userId, batchId = null) => 
     // Extract sn from response data if available
     const sn = data?.sn || null;
 
+    // Parse status_code - harus integer (HTTP status code)
+    // Jika status adalah string, gunakan null untuk status_code
+    let statusCode = null;
+    if (tx.statusCode !== undefined) {
+      statusCode = parseInt(tx.statusCode, 10) || null;
+    } else if (typeof status === 'number') {
+      statusCode = status;
+    }
+    
+    // Parse status string (Pending, Sukses, Gagal)
+    const statusString = typeof tx.status === 'string' 
+      ? tx.status 
+      : (tx.status || null);
+
     values.push(
       userId,
       customer_no,
@@ -86,9 +114,9 @@ export const saveTransactions = async (transactions, userId, batchId = null) => 
       product_code,
       ref_id,
       signature || '',
-      status || null, // status_code (HTTP status)
+      statusCode, // status_code (HTTP status) - harus integer atau null
       success ? 1 : 0,
-      tx.status || null, // status string (Pending, Sukses, Gagal)
+      statusString, // status string (Pending, Sukses, Gagal)
       responseTime || null,
       data ? JSON.stringify(data) : null,
       error || null,

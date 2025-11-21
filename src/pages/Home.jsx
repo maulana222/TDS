@@ -522,6 +522,7 @@ function Home() {
                 ref_id: progressData.result.ref_id,
                 signature: '',
                 status: transactionStatus, // Status string: "Pending", "Sukses", etc.
+                statusCode: progressData.result.statusCode || null, // HTTP status code (integer)
                 success: transactionSuccess, // Boolean: false for pending, true for success
                 responseTime: progressData.result.responseTime,
                 data: responseData,
